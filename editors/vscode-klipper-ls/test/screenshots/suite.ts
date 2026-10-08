@@ -28,12 +28,12 @@ interface Shot {
 }
 
 const SHOTS: Shot[] = [
-  { name: "hover-macro", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 380, width: 1200, show: "hover", expect: "Wait for the bed" },
-  { name: "peek-definition", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 650, width: 1440, show: "peek" },
-  { name: "hover-status-field", file: "printer.cfg", at: "homed_axes !=", keep: 280, width: 1200, show: "hover", expect: "homed" },
-  { name: "hover-config-option", file: "printer.cfg", at: "rotation_distance", keep: 380, width: 1200, show: "hover", expect: "Distance" },
-  { name: "hover-gcode-ignored-parameter", file: "sample.gcode", at: "M140 S60", keep: 430, width: 1200, show: "hover", expect: "Ignored by Klipper" },
-  { name: "hover-gcode-unknown-code", file: "sample.gcode", at: "M500", keep: 380, width: 1200, show: "hover", expect: "Unknown command" },
+  { name: "hover-macro", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 345, width: 1100, show: "hover", expect: "Wait for the bed" },
+  { name: "peek-definition", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 580, width: 1100, show: "peek" },
+  { name: "hover-status-field", file: "printer.cfg", at: "homed_axes !=", keep: 280, width: 1100, show: "hover", expect: "homed" },
+  { name: "hover-config-option", file: "printer.cfg", at: "rotation_distance", keep: 380, width: 1100, show: "hover", expect: "Distance" },
+  { name: "hover-gcode-ignored-parameter", file: "sample.gcode", at: "M140 S60", keep: 430, width: 1100, show: "hover", expect: "Ignored by Klipper" },
+  { name: "hover-gcode-unknown-code", file: "sample.gcode", at: "M500", keep: 380, width: 1100, show: "hover", expect: "Unknown command" },
 ];
 
 /** The window's CoreGraphics id and its width in points. */
@@ -83,9 +83,35 @@ async function hoverText(uri: vscode.Uri, pos: vscode.Position): Promise<string>
     .join("\n");
 }
 
+/** Resizes the VS Code test window (points). Needs Accessibility permission; skipped, not fatal, without it. */
+function resizeWindow(width: number, height: number) {
+  const script = `
+    tell application "System Events"
+      repeat with p in (every process whose background only is false)
+        try
+          repeat with w in windows of p
+            if name of w contains "${title}" then
+              set position of w to {40, 40}
+              set size of w to {${width}, ${height}}
+              return "resized"
+            end if
+          end repeat
+        end try
+      end repeat
+    end tell
+    return "not found"`;
+  try {
+    console.log(`window: ${execFileSync("osascript", ["-e", script], { encoding: "utf8" }).trim()}`);
+  } catch (error) {
+    console.log(`window left at its default size (${String(error).split("\n")[0]})`);
+  }
+}
+
 export async function run(): Promise<void> {
   fs.mkdirSync(out, { recursive: true });
   const root = vscode.workspace.workspaceFolders![0].uri.fsPath;
+  resizeWindow(1100, 700);
+  await sleep(1500);
   for (const cmd of ["workbench.action.closeSidebar", "workbench.action.closePanel", "workbench.action.closeAuxiliaryBar"]) {
     await vscode.commands.executeCommand(cmd);
   }
