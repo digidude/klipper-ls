@@ -62,6 +62,14 @@ async function main() {
     ),
   );
 
+  // A fixed, smaller window (points): less empty editor in every image.
+  const globalStorage = path.join(work, "user-data/User/globalStorage");
+  fs.mkdirSync(globalStorage, { recursive: true });
+  fs.writeFileSync(
+    path.join(globalStorage, "storage.json"),
+    JSON.stringify({ windowsState: { lastActiveWindow: { folder: `file://${workspace}`, uiState: { mode: 1, x: 80, y: 60, width: 1100, height: 660 } } } }),
+  );
+
   await runTests({
     extensionDevelopmentPath: root,
     extensionTestsPath: path.resolve(__dirname, "suite"),

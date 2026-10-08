@@ -19,6 +19,8 @@ interface Shot {
   at: string;
   /** Rows of the (2x) image to keep below the title bar; the rest is empty editor. */
   keep: number;
+  /** Columns of the (2x) image to keep. */
+  width: number;
   /** What to show: the hover, or a peeked definition. */
   show: "hover" | "peek";
   /** A phrase that must appear in the hover, so a shot never captures an empty box. */
@@ -26,12 +28,12 @@ interface Shot {
 }
 
 const SHOTS: Shot[] = [
-  { name: "hover-macro", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 760, show: "hover", expect: "Wait for the bed" },
-  { name: "peek-definition", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 1300, show: "peek" },
-  { name: "hover-status-field", file: "printer.cfg", at: "homed_axes !=", keep: 560, show: "hover", expect: "homed" },
-  { name: "hover-config-option", file: "printer.cfg", at: "rotation_distance", keep: 760, show: "hover", expect: "Distance" },
-  { name: "hover-gcode-ignored-parameter", file: "sample.gcode", at: "M140 S60", keep: 860, show: "hover", expect: "Ignored by Klipper" },
-  { name: "hover-gcode-unknown-code", file: "sample.gcode", at: "M500", keep: 760, show: "hover", expect: "Unknown command" },
+  { name: "hover-macro", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 760, width: 2400, show: "hover", expect: "Wait for the bed" },
+  { name: "peek-definition", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 1300, width: 2880, show: "peek" },
+  { name: "hover-status-field", file: "printer.cfg", at: "homed_axes !=", keep: 560, width: 2400, show: "hover", expect: "homed" },
+  { name: "hover-config-option", file: "printer.cfg", at: "rotation_distance", keep: 760, width: 2400, show: "hover", expect: "Distance" },
+  { name: "hover-gcode-ignored-parameter", file: "sample.gcode", at: "M140 S60", keep: 860, width: 2400, show: "hover", expect: "Ignored by Klipper" },
+  { name: "hover-gcode-unknown-code", file: "sample.gcode", at: "M500", keep: 760, width: 2400, show: "hover", expect: "Unknown command" },
 ];
 
 function windowId(): string {
@@ -45,7 +47,7 @@ function windowId(): string {
   }
 }
 
-async function capture(file: string, keep: number) {
+async function capture(file: string, keep: number, width: number) {
   // Window lookups and captures occasionally fail right after a window repaint.
   let last: unknown;
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -53,7 +55,7 @@ async function capture(file: string, keep: number) {
       execFileSync("screencapture", ["-x", "-o", `-l${windowId()}`, file]);
       if (fs.existsSync(file) && fs.statSync(file).size > 5000) {
         // Drop the title bar ("Extension Development Host" in a test run) and the empty editor below.
-        execFileSync("swift", [path.resolve(__dirname, "../../test/screenshots/crop.swift"), file, "64", String(keep)]);
+        execFileSync("swift", [path.resolve(__dirname, "../../test/screenshots/crop.swift"), file, "64", String(keep), String(width)]);
         return;
       }
     } catch (error) {
@@ -99,7 +101,7 @@ export async function run(): Promise<void> {
     await sleep(500);
     await vscode.commands.executeCommand(shot.show === "hover" ? "editor.action.showHover" : "editor.action.peekDefinition");
     await sleep(1500);
-    if (!process.env.SHOTS_DRY) await capture(path.join(out, `${shot.name}.png`), shot.keep);
+    if (!process.env.SHOTS_DRY) await capture(path.join(out, `${shot.name}.png`), shot.keep, shot.width);
     await vscode.commands.executeCommand("closeReferenceSearch");
     await vscode.commands.executeCommand("editor.action.hideHover");
     console.log(`captured ${shot.name}`);

@@ -26,6 +26,34 @@ These work in Klipper config and in sliced `.gcode` files:
 
 Large slicer files are fine: hovers and highlighting read only the lines they need, so a 32 MB file answers instantly.
 
+## Screenshots
+
+Taken in VS Code with [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper) supplying the colors; everything in the boxes is `klipper-ls`.
+
+**Your macros**: description, parameters with defaults, and where it's defined.
+
+![Hover on a macro call showing its description, parameters and definition](docs/screenshots/hover-macro.png)
+
+**Go to definition**, here peeked across an `[include]`d file.
+
+![Peek definition of a macro in another file](docs/screenshots/peek-definition.png)
+
+**Status fields in templates**: `printer.*` explained from Klipper's status reference.
+
+![Hover on printer.toolhead.homed_axes](docs/screenshots/hover-status-field.png)
+
+**Config options**: the entry from Klipper's config reference, with its section.
+
+![Hover on rotation_distance in a stepper section](docs/screenshots/hover-config-option.png)
+
+**G-code in sliced files**: which parameters Klipper ignores.
+
+![Hover on M140 showing the Marlin parameter reference and the parameter Klipper ignores](docs/screenshots/hover-gcode-ignored-parameter.png)
+
+**Codes Klipper doesn't run**: a warning that it replies `Unknown command` and skips the line.
+
+![Hover on M500 explaining that Klipper skips it](docs/screenshots/hover-gcode-unknown-code.png)
+
 ## Install
 
 Download the archive for your platform from the [latest release](https://github.com/digidude/klipper-ls/releases/latest) (macOS and Linux, x86_64 and aarch64), unpack it, and put `klipper-ls` on your `PATH`. Or build it with [Rust](https://rustup.rs):

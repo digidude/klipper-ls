@@ -16,6 +16,34 @@ Hover docs and go-to-definition for [Klipper](https://www.klipper3d.org/) `print
 - **Highlighting from the real parser** (LSP semantic tokens): sections, options, pins, and the G-code and Jinja inside macros, colored like in Zed. `.gcode` files get it too, for the lines on screen.
 - **Large slicer files are fine:** hovers and highlighting read only the lines they need.
 
+## Screenshots
+
+Taken in VS Code with [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper) supplying the colors; everything in the boxes is `klipper-ls`.
+
+**Your macros**: description, parameters with defaults, and where it's defined.
+
+![Hover on a macro call showing its description, parameters and definition](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/hover-macro.png)
+
+**Go to definition**, here peeked across an `[include]`d file.
+
+![Peek definition of a macro in another file](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/peek-definition.png)
+
+**Status fields in templates**: `printer.*` explained from Klipper's status reference.
+
+![Hover on printer.toolhead.homed_axes](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/hover-status-field.png)
+
+**Config options**: the entry from Klipper's config reference, with its section.
+
+![Hover on rotation_distance in a stepper section](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/hover-config-option.png)
+
+**G-code in sliced files**: which parameters Klipper ignores.
+
+![Hover on M140 showing the Marlin parameter reference and the parameter Klipper ignores](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/hover-gcode-ignored-parameter.png)
+
+**Codes Klipper doesn't run**: a warning that it replies `Unknown command` and skips the line.
+
+![Hover on M500 explaining that Klipper skips it](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/hover-gcode-unknown-code.png)
+
 ## Install
 
 Until it's on the Marketplace, install the `.vsix` from the [latest release](https://github.com/digidude/klipper-ls/releases/latest):

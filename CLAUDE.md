@@ -19,6 +19,7 @@ Editors (details in CONTRIBUTING.md): VS Code `cd editors/vscode-klipper-ls && n
 ## Decisions and why
 
 - **License stays MIT.** Klipper's and Marlin's docs are GPL-3.0; they are read at runtime (local checkout or a one-time download into `~/Library/Caches/klipper-ls/`) and never vendored, embedded or compiled in. Don't add doc text to the repo. Relicensing is a one-way door. Marlin's docs as a runtime source was reconfirmed 2026-10-06; don't remove or make it opt-in unprompted.
+- **README screenshots show short excerpts of Klipper's and Marlin's docs** (a sentence or two per hover, in `docs/screenshots/`). Dan accepted that use and risk on 2026-10-08; don't add more or longer excerpts, and don't quote doc text in repo text files. Regenerate with `npm run screenshots` in `editors/vscode-klipper-ls`.
 - **Release asset names are a contract** (`klipper-ls-<target>.tar.gz`): both client packages download them.
 - **Jinja is parsed in the grammar, not injected.** Klipper uses `{expr}` and G-code and Jinja share lines.
 - **Newlines go through the external scanner** (`_newline` / `_continuation` / `_jinja_newline`); EOF emits a zero-width `_newline` only when valid; no rule may consist of only a newline.
