@@ -36,7 +36,7 @@ Editors (details in CONTRIBUTING.md): VS Code `cd editors/vscode-klipper-ls && n
 - **The contract between server and clients** is the asset names, the language ids (`klipper`, `gcode`; hover code fences say "Klipper"), the init option names and the grammar `rev`. Change them in one commit.
 - **Zed grammar pin is self-referential:** `editors/zed-klipper-ls/extension.toml` `rev` points at a pushed commit of this repo (`path = "grammar"`); commit and push grammar changes, then bump `rev`. Grammar changes reach Zed only by commit.
 - **Zed queries:** the later pattern wins; many themes (e.g. JetBrains Dark) don't define `variable.parameter` or `function.builtin`; prefer `attribute`, `keyword`, `function`, `type`, `constant`, `string.special`. The palette is deliberately small (trimmed 2026-10-07); `editors/zed-klipper-ls/docs/highlighting.md` is the token-to-color guide, update it with any `highlights.scm` change.
-- **VS Code:** `src/binary.ts` stays free of `vscode` imports (unit tests run under plain node). Highlighting is TextMate (no tree-sitter in VS Code), so semantic tokens from the server (issue #5) is the way to unify highlighting across editors. A settings change restarts the client because the server reads options once.
+- **VS Code:** `src/binary.ts` stays free of `vscode` imports (unit tests run under plain node). Highlighting is the server's semantic tokens (`src/highlight.rs`), with the TextMate grammar only as a fallback/first paint; `configurationDefaults` turn semantic highlighting on for `klipper`/`gcode`. A settings change restarts the client because the server reads options once.
 
 ## Gotchas
 
