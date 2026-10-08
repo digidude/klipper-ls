@@ -4,6 +4,9 @@
   "description": "Hover docs and go-to-definition for Klipper printer.cfg, macros and sliced G-code, powered by klipper-ls.",
   "version": "0.3.0",
   "publisher": "digidude",
+  "author": {
+    "name": "Dan Klaussen"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
