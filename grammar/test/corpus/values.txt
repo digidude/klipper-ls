@@ -1,0 +1,180 @@
+============================================================
+STM32 pin with modifiers and chip prefix
+============================================================
+
+[stepper_x]
+endstop_pin: ^!EBBCan:PD1
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type))
+    (option
+      (key)
+      (value
+        (pin
+          (pin_modifier)
+          (pin_chip)
+          (pin_name))))))
+
+============================================================
+LPC176x pin
+============================================================
+
+[stepper_x]
+dir_pin: !P1.24
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type))
+    (option
+      (key)
+      (value
+        (pin
+          (pin_modifier)
+          (pin_name))))))
+
+============================================================
+Virtual endstops
+============================================================
+
+[stepper_x]
+endstop_pin: tmc2209_stepper_x:virtual_endstop
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type))
+    (option
+      (key)
+      (value
+        (pin
+          (pin_chip)
+          (pin_name))))))
+
+============================================================
+Pin list with aliases
+============================================================
+
+[output_pin x]
+pins: PA1, ^EXP1_5, gpio0_27, ar5, sx1_duex:PIN_12
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (option
+      (key)
+      (value
+        (pin
+          (pin_name))
+        (pin
+          (pin_modifier)
+          (pin_name))
+        (pin
+          (pin_name))
+        (pin
+          (pin_name))
+        (pin
+          (pin_chip)
+          (pin_name))))))
+
+============================================================
+Words that look like pins stay text
+============================================================
+
+[gcode_macro A]
+description: Note: PA1x and mqtt://broker:1883
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (option
+      (key)
+      (value
+        (text)
+        (text)
+        (text)
+        (text)))))
+
+============================================================
+Paths
+============================================================
+
+[mcu]
+serial: /dev/serial/by-id/usb-Klipper_rp2040-if00
+
+[save_variables]
+filename: ~/printer_data/config/variables.cfg
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type))
+    (option
+      (key)
+      (value
+        (path))))
+  (section
+    (section_header
+      (section_type))
+    (option
+      (key)
+      (value
+        (path)))))
+
+============================================================
+None and booleans
+============================================================
+
+[gcode_macro A]
+variable_x: None
+variable_y: True
+gcode:
+  SET_GCODE_VARIABLE MACRO=A VARIABLE=y VALUE=False
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (option
+      (key)
+      (value
+        (none)))
+    (option
+      (key)
+      (value
+        (boolean)))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (command)
+          (parameter
+            (parameter_name)
+            (word))
+          (parameter
+            (parameter_name)
+            (word))
+          (parameter
+            (parameter_name)
+            (boolean)))))))

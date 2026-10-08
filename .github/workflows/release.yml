@@ -1,0 +1,60 @@
+# Builds klipper-ls for each platform when a version tag is pushed and
+# attaches the archives to a GitHub release. The Zed and VS Code extensions
+# download `klipper-ls-<target>.tar.gz` from the latest release, so the asset
+# names below are part of their contract.
+#
+#   git tag v0.2.0 && git push origin v0.2.0
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux builds on the oldest runners available, so the binary
+          # links against an older glibc and still runs on Debian/Raspberry Pi OS.
+          - { os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-22.04-arm, target: aarch64-unknown-linux-gnu }
+          # Both macOS builds run on Apple Silicon; the x86_64 one cross-compiles.
+          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: macos-latest, target: x86_64-apple-darwin }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust target
+        run: |
+          rustup toolchain install stable --profile minimal --target ${{ matrix.target }}
+          rustup default stable
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: Package
+        run: |
+          tar -C target/${{ matrix.target }}/release -czf klipper-ls-${{ matrix.target }}.tar.gz klipper-ls
+      - uses: actions/upload-artifact@v4
+        with:
+          name: klipper-ls-${{ matrix.target }}
+          path: klipper-ls-${{ matrix.target }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.tar.gz --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes

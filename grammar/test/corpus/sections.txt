@@ -1,0 +1,176 @@
+============================================================
+Section with options, pins and inline comment
+============================================================
+
+[stepper_x]
+step_pin: PF13   # step
+endstop_pin: ^!EBBCan:PB6
+rotation_distance: 40
+microsteps = 32
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type))
+    (option
+      (key)
+      (value
+        (pin
+          (pin_name)))
+      (comment))
+    (option
+      (key)
+      (value
+        (pin
+          (pin_modifier)
+          (pin_chip)
+          (pin_name))))
+    (option
+      (key)
+      (value
+        (number)))
+    (option
+      (key)
+      (value
+        (number)))))
+
+============================================================
+Include and named section
+============================================================
+
+[include macros/*.cfg]
+[temperature_sensor chamber]
+sensor_type: Generic 3950
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name)))
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (option
+      (key)
+      (value
+        (text)
+        (number)))))
+
+============================================================
+Multi-line value
+============================================================
+
+[quad_gantry_level]
+points:
+  -10,25
+  -10,225
+
+  240,25
+speed: 300
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type))
+    (option
+      (key)
+      (value
+        (number)
+        (number)
+        (number)
+        (number)
+        (number)
+        (number)))
+    (option
+      (key)
+      (value
+        (number)))))
+
+============================================================
+SAVE_CONFIG block
+============================================================
+
+[printer]
+kinematics: corexy
+
+#*# <---- SAVE_CONFIG ---->
+#*# [bed_mesh default]
+#*# version = 1
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type))
+    (option
+      (key)
+      (value
+        (text)))
+    (comment)
+    (comment)
+    (comment)))
+
+============================================================
+No trailing newline
+============================================================
+
+[printer]
+max_velocity: 300
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type))
+    (option
+      (key)
+      (value
+        (number)))))
+
+============================================================
+Variable with dict and string
+============================================================
+
+[gcode_macro X]
+variable_cfg: {'a': 1, 'b': [1, 2]}
+variable_name: 'it''s'
+description: Home, then measure Beacon's thing
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (option
+      (key)
+      (value
+        (string)
+        (text)
+        (number)
+        (string)
+        (text)
+        (number)
+        (number)))
+    (option
+      (key)
+      (value
+        (string)
+        (string)))
+    (option
+      (key)
+      (value
+        (text)
+        (text)
+        (text)
+        (text)
+        (text)))))

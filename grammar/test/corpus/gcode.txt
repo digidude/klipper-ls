@@ -1,0 +1,247 @@
+============================================================
+Plain G-code and extended commands
+============================================================
+
+[gcode_macro A]
+gcode:
+  G28
+  G0 X125 Y-1.5 Z.5 F6000
+  TEMPERATURE_WAIT SENSOR=extruder MINIMUM=140
+  M118 PS: soak - done >= ok
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (command))
+        (gcode_line
+          (command)
+          (letter_parameter
+            (parameter_name)
+            (number))
+          (letter_parameter
+            (parameter_name)
+            (number))
+          (letter_parameter
+            (parameter_name)
+            (number))
+          (letter_parameter
+            (parameter_name)
+            (number)))
+        (gcode_line
+          (command)
+          (parameter
+            (parameter_name)
+            (word))
+          (parameter
+            (parameter_name)
+            (number)))
+        (gcode_line
+          (command)
+          (word)
+          (word)
+          (word)
+          (word)
+          (word)
+          (word))))))
+
+============================================================
+Letter parameters with Jinja
+============================================================
+
+[gcode_macro A]
+gcode:
+  M140 S{BED}
+  G1 X{x + 1} E{e|float}
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (command)
+          (letter_parameter
+            (parameter_name)
+            (jinja_expression
+              (identifier))))
+        (gcode_line
+          (command)
+          (letter_parameter
+            (parameter_name)
+            (jinja_expression
+              (binary_expression
+                (identifier)
+                (number))))
+          (letter_parameter
+            (parameter_name)
+            (jinja_expression
+              (filter
+                (identifier)
+                (filter_name)))))))))
+
+============================================================
+Strings with Jinja inside
+============================================================
+
+[gcode_macro A]
+gcode:
+  SET_GCODE_VARIABLE MACRO=A VARIABLE=mode VALUE="'{params.MODE}'"
+  RESPOND MSG="hello world"
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (command)
+          (parameter
+            (parameter_name)
+            (word))
+          (parameter
+            (parameter_name)
+            (word))
+          (parameter
+            (parameter_name)
+            (gcode_string
+              (string_content)
+              (jinja_expression
+                (attribute
+                  (identifier)
+                  (property_identifier)))
+              (string_content))))
+        (gcode_line
+          (command)
+          (parameter
+            (parameter_name)
+            (gcode_string
+              (string_content))))))))
+
+============================================================
+Column-0 comment does not end the block
+============================================================
+
+[gcode_macro A]
+gcode:
+  G28
+# disabled:
+#  G32
+  M84
+other: 1
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (command))
+        (comment)
+        (comment)
+        (gcode_line
+          (command))))
+    (option
+      (key)
+      (value
+        (number)))))
+
+============================================================
+Template keys
+============================================================
+
+[gcode_button b]
+pin: PG15
+press_gcode: G28
+release_gcode:
+  M84
+
+[idle_timeout]
+gcode:
+  TURN_OFF_HEATERS
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (option
+      (key)
+      (value
+        (pin
+          (pin_name))))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (command))))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (command)))))
+  (section
+    (section_header
+      (section_type))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (command))))))
+
+============================================================
+Command from a template
+============================================================
+
+[gcode_macro A]
+gcode:
+  {cmd} ARG=1
+  {% if x %}G28{% endif %}
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (jinja_expression
+            (identifier))
+          (parameter
+            (parameter_name)
+            (number)))
+        (gcode_line
+          (jinja_statement
+            (if_statement
+              (identifier)))
+          (command)
+          (jinja_statement
+            (keyword_statement)))))))

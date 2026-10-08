@@ -1,0 +1,246 @@
+============================================================
+Set with filters
+============================================================
+
+[gcode_macro A]
+gcode:
+  {% set BED = params.BED|default(100)|int %}
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (jinja_statement
+            (set_statement
+              (identifier)
+              (filter
+                (filter
+                  (attribute
+                    (identifier)
+                    (property_identifier))
+                  (filter_name)
+                  (argument_list
+                    (number)))
+                (filter_name)))))))))
+
+============================================================
+If, elif, else, tests
+============================================================
+
+[gcode_macro A]
+gcode:
+  {% if params.SOAK is defined %}
+  {% elif x is not none and 'chamber' in printer %}
+  {% else %}
+  {% endif %}
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (jinja_statement
+            (if_statement
+              (test
+                (attribute
+                  (identifier)
+                  (property_identifier))
+                (test_name)))))
+        (gcode_line
+          (jinja_statement
+            (elif_statement
+              (binary_expression
+                (test
+                  (identifier)
+                  (test_name))
+                (binary_expression
+                  (string)
+                  (identifier))))))
+        (gcode_line
+          (jinja_statement
+            (keyword_statement)))
+        (gcode_line
+          (jinja_statement
+            (keyword_statement)))))))
+
+============================================================
+For loop and range
+============================================================
+
+[gcode_macro A]
+gcode:
+  {% for m in range(SOAK) %}
+    M118 {SOAK - m} left
+  {% endfor %}
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (jinja_statement
+            (for_statement
+              (identifier)
+              (call
+                (identifier)
+                (argument_list
+                  (identifier))))))
+        (gcode_line
+          (command)
+          (jinja_expression
+            (binary_expression
+              (identifier)
+              (identifier)))
+          (word))
+        (gcode_line
+          (jinja_statement
+            (keyword_statement)))))))
+
+============================================================
+Multi-line call and concatenated strings
+============================================================
+
+[gcode_macro A]
+gcode:
+  {action_respond_info(
+      "a %d"
+      "b" % (1))}
+  G28
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (jinja_expression
+            (call
+              (identifier)
+              (argument_list
+                (binary_expression
+                  (concatenated_string
+                    (string)
+                    (string))
+                  (parenthesized_expression
+                    (number)))))))
+        (gcode_line
+          (command))))))
+
+============================================================
+Subscripts, attributes and operators
+============================================================
+
+[gcode_macro A]
+gcode:
+  {% set v = printer["gcode_macro X"].var ~ 'mm' if a or not b else -2 ** 3 %}
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (jinja_statement
+            (set_statement
+              (identifier)
+              (conditional_expression
+                (binary_expression
+                  (attribute
+                    (subscript
+                      (identifier)
+                      (string))
+                    (property_identifier))
+                  (string))
+                (binary_expression
+                  (identifier)
+                  (unary_expression
+                    (identifier)))
+                (unary_expression
+                  (binary_expression
+                    (number)
+                    (number)))))))))))
+
+============================================================
+Jinja comment and whitespace control
+============================================================
+
+[gcode_macro A]
+gcode:
+  {# note #}
+  {%- set a = 1 -%}
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (jinja_comment))
+        (gcode_line
+          (jinja_statement
+            (set_statement
+              (identifier)
+              (number))))))))
+
+============================================================
+Paren-less test argument
+============================================================
+
+[gcode_macro A]
+gcode:
+  {% set r = k is in ['delta', 'polar'] %}
+
+------------------------------------------------------------
+
+(source_file
+  (section
+    (section_header
+      (section_type)
+      (section_name))
+    (gcode_option
+      (key)
+      (gcode_block
+        (gcode_line
+          (jinja_statement
+            (set_statement
+              (identifier)
+              (test
+                (identifier)
+                (test_name)
+                (list
+                  (string)
+                  (string))))))))))
