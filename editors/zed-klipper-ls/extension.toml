@@ -12,7 +12,7 @@ repository = "https://github.com/digidude/klipper-ls"
 # `rev` to the pushed commit. While iterating locally, temporarily point
 # `repository` at "file:///path/to/klipper-ls" (and never commit that).
 repository = "https://github.com/digidude/klipper-ls"
-rev = "69379ef7695fb32ab823a82bd2451d4b5297488f"
+rev = "3e0ab8cccd4b52f0b16406ba4487fb70400206b5"
 path = "grammar"
 
 [language_servers.klipper-ls]
