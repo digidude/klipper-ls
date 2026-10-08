@@ -27,8 +27,10 @@ async function main() {
   if (!fs.existsSync(bin)) throw new Error("set KLIPPER_LS_BIN to a klipper-ls binary");
 
   // A scratch copy, so the settings written below never touch the repo.
+  // A short, fixed path: the peek-definition title shows it in the image.
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "klipper-shots-"));
-  const workspace = path.join(work, "printer_config");
+  const workspace = "/tmp/printer_config";
+  fs.rmSync(workspace, { recursive: true, force: true });
   fs.cpSync(path.join(root, "test/screenshots/workspace"), workspace, { recursive: true });
   fs.mkdirSync(path.join(workspace, ".vscode"));
   fs.writeFileSync(
@@ -40,12 +42,18 @@ async function main() {
         "workbench.startupEditor": "none",
         "workbench.tips.enabled": false,
         "editor.minimap.enabled": false,
-        "editor.fontSize": 15,
-        "editor.lineHeight": 24,
+        "editor.hover.above": false,
+        "editor.fontSize": 13,
+        "editor.lineHeight": 22,
         "editor.glyphMargin": false,
         "editor.folding": false,
         "breadcrumbs.enabled": false,
         "window.commandCenter": false,
+        "window.title": "${activeEditorShort} \u2014 ${rootName}",
+        "workbench.layoutControl.enabled": false,
+        "chat.disableAIFeatures": true,
+        "update.mode": "none",
+        "extensions.ignoreRecommendations": true,
         "klipper.server.path": bin,
         ...(docs ? { "klipper.klipperDocs": docs } : {}),
       },
@@ -59,7 +67,8 @@ async function main() {
     extensionTestsPath: path.resolve(__dirname, "suite"),
     launchArgs: [
       workspace,
-      "--disable-extensions",
+      // An empty extensions folder: only the two extensions under development load.
+      `--extensions-dir=${path.join(work, "extensions")}`,
       "--disable-workspace-trust",
       `--extensionDevelopmentPath=${otherExtension()}`,
       `--user-data-dir=${path.join(work, "user-data")}`,
