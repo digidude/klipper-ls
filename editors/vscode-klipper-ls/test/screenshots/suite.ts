@@ -29,7 +29,7 @@ interface Shot {
 
 const SHOTS: Shot[] = [
   { name: "hover-macro", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 345, width: 1100, show: "hover", expect: "Wait for the bed" },
-  { name: "peek-definition", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 580, width: 1100, show: "peek" },
+  { name: "peek-definition", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 584, width: 1100, show: "peek" },
   { name: "hover-status-field", file: "printer.cfg", at: "homed_axes !=", keep: 280, width: 1100, show: "hover", expect: "homed" },
   { name: "hover-config-option", file: "printer.cfg", at: "rotation_distance", keep: 380, width: 1100, show: "hover", expect: "Distance" },
   { name: "hover-gcode-ignored-parameter", file: "sample.gcode", at: "M140 S60", keep: 430, width: 1100, show: "hover", expect: "Ignored by Klipper" },
