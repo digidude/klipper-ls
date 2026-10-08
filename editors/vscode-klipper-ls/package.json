@@ -27,7 +27,10 @@
     "jinja"
   ],
   "main": "./dist/extension.js",
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:klipper-cfg",
+    "onLanguage:klipper-gcode"
+  ],
   "contributes": {
     "languages": [
       {
@@ -125,7 +128,8 @@
     "typecheck": "tsc --noEmit",
     "test:unit": "node --test --experimental-strip-types test/unit/*.test.ts",
     "test:e2e": "npm run build && tsc -p test/tsconfig.json && node out-test/runTest.js",
-    "package": "npm run typecheck && npm run build && vsce package --no-dependencies"
+    "package": "npm run typecheck && npm run build && vsce package --no-dependencies",
+    "screenshots": "npm run build && tsc -p test/tsconfig.json && node out-test/screenshots/run.js"
   },
   "dependencies": {
     "vscode-languageclient": "9.0.1"

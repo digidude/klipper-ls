@@ -45,7 +45,8 @@ impl DocKind {
             .extension()
             .and_then(|e| e.to_str())
             .is_some_and(|e| matches!(e.to_ascii_lowercase().as_str(), "gcode" | "gco" | "g"));
-        if language_id == "gcode" || (language_id != "klipper" && gcode_extension) {
+        // "gcode" here, "klipper-gcode" from the dannymcgee.klipper extension.
+        if language_id.ends_with("gcode") || (!language_id.starts_with("klipper") && gcode_extension) {
             DocKind::Gcode
         } else {
             DocKind::Klipper
@@ -348,5 +349,20 @@ impl Prepared {
                 marlin: self.marlin.as_deref(),
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detects_document_kinds_across_languages() {
+        let uri = |p: &str| Url::parse(&format!("file:///tmp/{p}")).unwrap();
+        assert_eq!(DocKind::detect("gcode", &uri("a.gcode")), DocKind::Gcode);
+        assert_eq!(DocKind::detect("klipper-gcode", &uri("a.gcode")), DocKind::Gcode);
+        assert_eq!(DocKind::detect("klipper", &uri("printer.cfg")), DocKind::Klipper);
+        assert_eq!(DocKind::detect("klipper-cfg", &uri("printer.cfg")), DocKind::Klipper);
+        assert_eq!(DocKind::detect("plaintext", &uri("a.gco")), DocKind::Gcode);
     }
 }

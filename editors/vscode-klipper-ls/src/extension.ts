@@ -2,6 +2,14 @@ import * as vscode from "vscode";
 import { LanguageClient, type LanguageClientOptions, type ServerOptions } from "vscode-languageclient/node";
 import { SERVER, downloadLatest, expandHome, findOnPath, isFile, newestDownloaded } from "./binary";
 
+/** Languages this extension defines; the server also colors these (semantic tokens). */
+const OWN_LANGUAGES = ["klipper", "gcode"];
+/**
+ * Language ids of other Klipper extensions (dannymcgee.klipper). The server
+ * adds hover and go-to-definition to their files, but leaves colors to them.
+ */
+const OTHER_LANGUAGES = ["klipper-cfg", "klipper-gcode"];
+
 let client: LanguageClient | undefined;
 let output: vscode.OutputChannel;
 
@@ -63,10 +71,14 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
 
   const serverOptions: ServerOptions = { command, args: [] };
   const clientOptions: LanguageClientOptions = {
-    documentSelector: [
-      { scheme: "file", language: "klipper" },
-      { scheme: "file", language: "gcode" },
-    ],
+    documentSelector: [...OWN_LANGUAGES, ...OTHER_LANGUAGES].map((language) => ({ scheme: "file", language })),
+    middleware: {
+      // Another extension's grammar owns the colors for its languages; two
+      // sets of semantic colors on top of each other would fight.
+      provideDocumentSemanticTokens: (doc, token, next) => (OWN_LANGUAGES.includes(doc.languageId) ? next(doc, token) : undefined),
+      provideDocumentRangeSemanticTokens: (doc, range, token, next) =>
+        OWN_LANGUAGES.includes(doc.languageId) ? next(doc, range, token) : undefined,
+    },
     initializationOptions: initializationOptions(),
     outputChannel: output,
   };

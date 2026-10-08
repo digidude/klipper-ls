@@ -93,7 +93,7 @@ npm run build && npm run test:unit
 KLIPPER_LS_BIN=../../target/debug/klipper-ls KLIPPER_DOCS=../../klipper/docs npm run test:e2e   # real VS Code, ~300 MB first run
 ```
 
-F5 ("Run Extension") debugs it. `src/binary.ts` must stay free of `vscode` imports so the unit tests run under plain node. The server reads options once at startup, so a settings change restarts the client.
+`KLIPPER_OTHER_EXTENSION=<path to dannymcgee.klipper>` adds a check of klipper-ls on that extension's languages. `npm run screenshots` regenerates the README screenshots in a real VS Code with both extensions installed (macOS; needs Screen Recording permission; `SHOTS_DRY=1` checks every hover without capturing). F5 ("Run Extension") debugs it. `src/binary.ts` must stay free of `vscode` imports so the unit tests run under plain node. The server reads options once at startup, so a settings change restarts the client.
 
 ### Zed (`editors/zed-klipper-ls`)
 

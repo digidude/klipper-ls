@@ -42,6 +42,16 @@ On Windows, build the server (`cargo install --git https://github.com/digidude/k
 
 `.gcode` files are highlighted by the server too (semantic tokens, visible lines only).
 
+## Using it with another Klipper extension
+
+klipper-ls works alongside [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper), which provides a richer TextMate grammar. If you prefer its colors, keep both installed and tell VS Code to open your files with its language:
+
+```jsonc
+"files.associations": { "*.cfg": "klipper-cfg", "*.gcode": "klipper-gcode" }
+```
+
+klipper-ls then attaches to those files and adds hover and go-to-definition. It leaves the colors to the other extension: semantic tokens are only sent for this extension's own `klipper` and `gcode` languages, so the two never fight. `klipper-config` (aeresov.klipper-config) isn't supported this way yet.
+
 ## Settings
 
 | Setting | Meaning |

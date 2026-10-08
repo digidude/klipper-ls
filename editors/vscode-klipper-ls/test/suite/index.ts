@@ -89,5 +89,21 @@ export async function run(): Promise<void> {
   });
   assert.ok(gcode.includes("G1:keyword") && gcode.includes("X:parameter"), gcode.join(" "));
   assert.ok(!gcode.includes("PRINT_START:function"), "line outside the range was highlighted");
+  // Next to another Klipper extension: its language ids get our hovers and
+  // definitions, but not our colors.
+  if (vscode.extensions.getExtension("dannymcgee.klipper")) {
+    const other = await vscode.workspace.openTextDocument(path.join(fixtures, "printer.cfg"));
+    await vscode.languages.setTextDocumentLanguage(other, "klipper-cfg");
+    const hovers = await until("hover on klipper-cfg", async () => {
+      const h = await vscode.commands.executeCommand<vscode.Hover[]>(
+        "vscode.executeHoverProvider", other.uri, other.positionAt(other.getText().indexOf("HEAT_SOAK") + 1));
+      return h?.length ? text(h) : undefined;
+    });
+    assert.match(hovers, /HEAT_SOAK/);
+    const tokens = await vscode.commands.executeCommand<vscode.SemanticTokens | undefined>(
+      "vscode.provideDocumentSemanticTokens", other.uri);
+    assert.ok(!tokens || tokens.data.length === 0, "semantic tokens must not be applied to another extension's language");
+    console.log("other-extension ok");
+  }
   console.log("e2e ok");
 }
