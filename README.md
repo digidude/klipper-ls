@@ -123,6 +123,8 @@ The server sends semantic tokens, so a client that enables them (Neovim does by 
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+**Looking for maintainers.** This is a hobby project and its author doesn't plan to keep it for the long term. If you use Klipper and want it to keep going, see [MAINTAINERS.md](MAINTAINERS.md); you can look after just one area (server, grammar, VS Code, Zed, or triage).
+
 ## Credits and license
 
 MIT. Hover text comes from [Klipper's docs](https://github.com/Klipper3d/klipper/tree/master/docs) and [Marlin's G-code reference](https://marlinfw.org/meta/gcode/). Both are GPL-3.0; they are read at runtime and never bundled with this project.

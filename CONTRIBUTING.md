@@ -1,5 +1,7 @@
 # Contributing
 
+Contributions are accepted under the project's MIT licence (inbound = outbound). Never paste Klipper or Marlin documentation into the repo; see [docs/maintaining.md](docs/maintaining.md) for the rules and the release process, and [MAINTAINERS.md](MAINTAINERS.md) for who looks after what.
+
 ## Layout
 
 ```
