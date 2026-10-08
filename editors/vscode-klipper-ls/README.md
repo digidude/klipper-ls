@@ -13,7 +13,8 @@ Hover docs and go-to-definition for [Klipper](https://www.klipper3d.org/) `print
 - **Sections and options** (`[heater_bed]`, `rotation_distance`): the entry in Klipper's config reference.
 - **Status fields in templates** (`printer.toolhead.position`): the entry in Klipper's status reference.
 - **Go to definition** (F12 / Cmd-click): macro call → `[gcode_macro]` across `[include]`d files; `[include macros/*.cfg]` → the files.
-- **Large slicer files are fine:** hovers read only the line under the cursor.
+- **Highlighting from the real parser** (LSP semantic tokens): sections, options, pins, and the G-code and Jinja inside macros, colored like in Zed. `.gcode` files get it too, for the lines on screen.
+- **Large slicer files are fine:** hovers and highlighting read only the lines they need.
 
 ## Install
 
@@ -39,7 +40,7 @@ On Windows, build the server (`cargo install --git https://github.com/digidude/k
 "files.associations": { "printer.cfg": "klipper", "*.cfg": "klipper" }
 ```
 
-This extension adds no highlighting for `.gcode`; hovers still work, and any G-code extension that uses the language id `gcode` gives you colors.
+`.gcode` files are highlighted by the server too (semantic tokens, visible lines only).
 
 ## Settings
 
@@ -61,7 +62,8 @@ Klipper's and Marlin's docs (both GPL-3.0) are read at runtime, from a local cop
 
 - Plugins outside Klipper (Beacon, led_effect, …) have no docs to show.
 - No diagnostics, completion or rename yet.
-- Highlighting is a TextMate grammar: it treats a macro body as a block until the next column-0 line, but can't tell every G-code detail the way the tree-sitter grammar in klipper-ls does.
+- Colors come from your theme's mapping of semantic token types (function, keyword, parameter, …). Themes that disable semantic highlighting fall back to a simpler built-in TextMate grammar, which is less precise. The extension turns semantic highlighting on for `klipper` and `gcode`; if you override `editor.semanticTokenColorCustomizations` you can recolor them.
+- Punctuation (`=`, `:`, brackets) keeps the TextMate color; the server doesn't tokenize it.
 
 ## Development
 

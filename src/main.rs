@@ -12,6 +12,7 @@
 
 mod features;
 mod gcode;
+mod highlight;
 mod index;
 mod knowledge;
 mod position;
@@ -22,8 +23,8 @@ use std::error::Error;
 
 use lsp_server::{Connection, Message};
 use lsp_types::{
-    HoverProviderCapability, InitializeParams, OneOf, ServerCapabilities,
-    TextDocumentSyncCapability, TextDocumentSyncKind,
+    HoverProviderCapability, InitializeParams, OneOf, SemanticTokensFullOptions, SemanticTokensOptions,
+    SemanticTokensServerCapabilities, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
 };
 
 fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
@@ -37,6 +38,12 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::INCREMENTAL)),
         hover_provider: Some(HoverProviderCapability::Simple(true)),
         definition_provider: Some(OneOf::Left(true)),
+        semantic_tokens_provider: Some(SemanticTokensServerCapabilities::SemanticTokensOptions(SemanticTokensOptions {
+            legend: highlight::legend(),
+            range: Some(true),
+            full: Some(SemanticTokensFullOptions::Bool(true)),
+            ..SemanticTokensOptions::default()
+        })),
         ..ServerCapabilities::default()
     })?;
     let params: InitializeParams = serde_json::from_value(connection.initialize(capabilities)?)?;

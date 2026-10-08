@@ -13,6 +13,7 @@ src/knowledge/mod.rs        layering: Klipper first, Marlin underneath, what Kli
 src/index.rs                your macros, following [include]s from printer.cfg
 src/features.rs             what's under the cursor -> hover / definition
 src/gcode.rs                the same for .gcode files, one line at a time
+src/highlight.rs            semantic tokens: runs Zed's highlights.scm and maps captures to LSP token types
 scripts/probe.py            talk to the server from a terminal (no editor needed)
 grammar/                    tree-sitter-klipper
   grammar.js                the grammar

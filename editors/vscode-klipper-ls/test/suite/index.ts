@@ -58,5 +58,36 @@ export async function run(): Promise<void> {
     const option = await vscode.commands.executeCommand<vscode.Hover[]>("vscode.executeHoverProvider", doc.uri, at("sensor_pin"));
     assert.ok(text(option).length > 0, "no hover for sensor_pin");
   }
+  // Semantic tokens: highlighting comes from the server's parse, in config...
+  const legend = await vscode.commands.executeCommand<vscode.SemanticTokensLegend>(
+    "vscode.provideDocumentSemanticTokensLegend", doc.uri);
+  assert.ok(legend?.tokenTypes.includes("function"), "no semantic token legend");
+  const decode = (document: vscode.TextDocument, tokens: vscode.SemanticTokens) => {
+    const out: string[] = [];
+    let line = 0, col = 0;
+    for (let i = 0; i < tokens.data.length; i += 5) {
+      line += tokens.data[i];
+      col = tokens.data[i] === 0 ? col + tokens.data[i + 1] : tokens.data[i + 1];
+      const text = document.lineAt(line).text.substr(col, tokens.data[i + 2]);
+      out.push(`${text}:${legend.tokenTypes[tokens.data[i + 3]]}`);
+    }
+    return out;
+  };
+  const cfgTokens = await vscode.commands.executeCommand<vscode.SemanticTokens>("vscode.provideDocumentSemanticTokens", doc.uri);
+  const cfg = decode(doc, cfgTokens);
+  for (const expected of ["heater_bed:type", "PRINT_START:function", "M140:keyword", "HEAT_SOAK:function", "BED:variable"]) {
+    assert.ok(cfg.includes(expected), `config token ${expected} missing from ${cfg.join(" ")}`);
+  }
+
+  // ...and in .gcode, where only the requested lines are looked at.
+  const gdoc = await vscode.workspace.openTextDocument(path.join(fixtures, "sample.gcode"));
+  assert.equal(gdoc.languageId, "gcode");
+  const gcode = await until("gcode tokens", async () => {
+    const t = await vscode.commands.executeCommand<vscode.SemanticTokens>(
+      "vscode.provideDocumentRangeSemanticTokens", gdoc.uri, new vscode.Range(1, 0, 3, 0));
+    return t?.data.length ? decode(gdoc, t) : undefined;
+  });
+  assert.ok(gcode.includes("G1:keyword") && gcode.includes("X:parameter"), gcode.join(" "));
+  assert.ok(!gcode.includes("PRINT_START:function"), "line outside the range was highlighted");
   console.log("e2e ok");
 }

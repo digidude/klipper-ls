@@ -109,7 +109,15 @@
         "command": "klipper.showOutput",
         "title": "Klipper: Show Server Output"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "[klipper]": {
+        "editor.semanticHighlighting.enabled": true
+      },
+      "[gcode]": {
+        "editor.semanticHighlighting.enabled": true
+      }
+    }
   },
   "scripts": {
     "build": "esbuild src/extension.ts --bundle --platform=node --target=node18 --external:vscode --outfile=dist/extension.js --sourcemap",
@@ -127,7 +135,7 @@
     "@types/vscode": "1.90.0",
     "@vscode/test-electron": "3.1.0",
     "@vscode/vsce": "3.2.1",
-    "esbuild": "0.24.0",
+    "esbuild": "^0.28.2",
     "typescript": "5.6.3",
     "vscode-oniguruma": "2.0.1",
     "vscode-textmate": "9.1.0"

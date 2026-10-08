@@ -1,0 +1,5 @@
+; layer 1
+G28
+G1 X10.5 Y20 F3000 ; move
+M104 S215
+PRINT_START BED=60

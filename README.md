@@ -22,7 +22,9 @@ These work in Klipper config and in sliced `.gcode` files:
 - **Status fields in templates** (`printer.toolhead.position`, `printer['heater_generic chamber'].target`): the matching entry in Klipper's status reference. `printer["gcode_macro X"].var` shows the variable's initial value, and flags a variable the macro doesn't define.
 - **Go to definition:** from a macro call to its `[gcode_macro]`, across `[include]`d files; from `[include macros/*.cfg]` to the files; from built-ins into Klipper's docs.
 
-Large slicer files are fine: hovers read only the line under the cursor, so a 32 MB file answers instantly.
+- **Highlighting** (semantic tokens): config files and macros, including the G-code and Jinja inside `[gcode_macro]`, colored from the real parse tree, the same as in Zed. In `.gcode` files only the lines on screen are looked at.
+
+Large slicer files are fine: hovers and highlighting read only the lines they need, so a 32 MB file answers instantly.
 
 ## Install
 
@@ -79,7 +81,7 @@ vim.lsp.config("klipper-ls", {
 vim.lsp.enable("klipper-ls")
 ```
 
-The tree-sitter grammar in [`grammar/`](grammar) can also be used on its own for highlighting.
+The server sends semantic tokens, so a client that enables them (Neovim does by default) gets highlighting without tree-sitter. The tree-sitter grammar in [`grammar/`](grammar) can also be used on its own.
 
 ## Known limitations
 
@@ -87,6 +89,7 @@ The tree-sitter grammar in [`grammar/`](grammar) can also be used on its own for
 - Status fields that Klipper's reference doesn't list (such as `toolhead.estimated_print_time`) are reported as undocumented.
 - Settings are read once at startup; restart the server after changing them.
 - No diagnostics, completion or rename yet.
+- Semantic token colors depend on your editor theme. Punctuation (`=`, `:`, brackets) isn't tokenized; the editor's own grammar, if any, colors it.
 
 ## Contributing
 

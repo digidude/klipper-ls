@@ -9,18 +9,22 @@ use lsp_server::{ErrorCode, Notification, Request, Response};
 use lsp_types::notification::{
     DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
 };
-use lsp_types::request::{GotoDefinition, HoverRequest, Request as _};
+use lsp_types::request::{
+    GotoDefinition, HoverRequest, Request as _, SemanticTokensFullRequest, SemanticTokensRangeRequest,
+};
 use lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverContents, HoverParams,
-    InitializeParams, MarkupContent, MarkupKind, TextDocumentContentChangeEvent,
-    TextDocumentPositionParams, Url,
+    InitializeParams, MarkupContent, MarkupKind, SemanticTokens, SemanticTokensParams,
+    SemanticTokensRangeParams, SemanticTokensRangeResult, SemanticTokensResult,
+    TextDocumentContentChangeEvent, TextDocumentPositionParams, Url,
 };
 use serde_json::Value;
 use tree_sitter::Tree;
 
 use crate::features::{self, Context, Target};
 use crate::gcode;
+use crate::highlight;
 use crate::index::{self, Index};
 use crate::knowledge::marlin::MarlinDocs;
 use crate::knowledge::{KlipperDocs, MarlinSlot, Sources, klipper};
@@ -179,6 +183,14 @@ impl Server {
                 .map(|p| serde_json::to_value(self.hover(p.text_document_position_params))),
             GotoDefinition::METHOD => serde_json::from_value::<GotoDefinitionParams>(request.params)
                 .map(|p| serde_json::to_value(self.definition(p.text_document_position_params))),
+            SemanticTokensFullRequest::METHOD => serde_json::from_value::<SemanticTokensParams>(request.params)
+                .map(|p| serde_json::to_value(self.semantic_tokens(&p.text_document.uri, None).map(SemanticTokensResult::Tokens))),
+            SemanticTokensRangeRequest::METHOD => serde_json::from_value::<SemanticTokensRangeParams>(request.params).map(|p| {
+                let lines = p.range.start.line..p.range.end.line + 1;
+                serde_json::to_value(
+                    self.semantic_tokens(&p.text_document.uri, Some(lines)).map(SemanticTokensRangeResult::Tokens),
+                )
+            }),
             method => {
                 return Response::new_err(
                     id,
@@ -205,6 +217,22 @@ impl Server {
             }),
             range: Some(document.lines.range(&document.text, target.start, target.end)),
         })
+    }
+
+    /// Highlighting. Config files are parsed already; `.gcode` is only ever
+    /// looked at a range of lines at a time, so a full request for one is
+    /// answered empty and the client's range requests do the work.
+    fn semantic_tokens(&self, uri: &Url, lines: Option<std::ops::Range<u32>>) -> Option<SemanticTokens> {
+        let doc = self.documents.get(uri)?;
+        let data = match (doc.kind, &doc.tree) {
+            (DocKind::Klipper, Some(tree)) => highlight::config_tokens(tree, &doc.text, &doc.lines, lines),
+            (DocKind::Gcode, _) => match lines {
+                Some(range) => highlight::gcode_tokens(&doc.text, &doc.lines, range),
+                None => Vec::new(),
+            },
+            _ => Vec::new(),
+        };
+        Some(SemanticTokens { result_id: None, data })
     }
 
     fn definition(&mut self, params: TextDocumentPositionParams) -> Option<GotoDefinitionResponse> {
