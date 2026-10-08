@@ -17,9 +17,9 @@ interface Shot {
   file: string;
   /** The cursor goes one character into the first match of `at`. */
   at: string;
-  /** Rows of the (2x) image to keep below the title bar; the rest is empty editor. */
+  /** Points of height to keep below the title bar; the rest is empty editor. */
   keep: number;
-  /** Columns of the (2x) image to keep. */
+  /** Points of width to keep. */
   width: number;
   /** What to show: the hover, or a peeked definition. */
   show: "hover" | "peek";
@@ -28,17 +28,19 @@ interface Shot {
 }
 
 const SHOTS: Shot[] = [
-  { name: "hover-macro", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 760, width: 2400, show: "hover", expect: "Wait for the bed" },
-  { name: "peek-definition", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 1300, width: 2880, show: "peek" },
-  { name: "hover-status-field", file: "printer.cfg", at: "homed_axes !=", keep: 560, width: 2400, show: "hover", expect: "homed" },
-  { name: "hover-config-option", file: "printer.cfg", at: "rotation_distance", keep: 760, width: 2400, show: "hover", expect: "Distance" },
-  { name: "hover-gcode-ignored-parameter", file: "sample.gcode", at: "M140 S60", keep: 860, width: 2400, show: "hover", expect: "Ignored by Klipper" },
-  { name: "hover-gcode-unknown-code", file: "sample.gcode", at: "M500", keep: 760, width: 2400, show: "hover", expect: "Unknown command" },
+  { name: "hover-macro", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 380, width: 1200, show: "hover", expect: "Wait for the bed" },
+  { name: "peek-definition", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 650, width: 1440, show: "peek" },
+  { name: "hover-status-field", file: "printer.cfg", at: "homed_axes !=", keep: 280, width: 1200, show: "hover", expect: "homed" },
+  { name: "hover-config-option", file: "printer.cfg", at: "rotation_distance", keep: 380, width: 1200, show: "hover", expect: "Distance" },
+  { name: "hover-gcode-ignored-parameter", file: "sample.gcode", at: "M140 S60", keep: 430, width: 1200, show: "hover", expect: "Ignored by Klipper" },
+  { name: "hover-gcode-unknown-code", file: "sample.gcode", at: "M500", keep: 380, width: 1200, show: "hover", expect: "Unknown command" },
 ];
 
-function windowId(): string {
+/** The window's CoreGraphics id and its width in points. */
+function findWindow(): { id: string; widthPoints: number } {
   try {
-    return execFileSync("swift", [swift, title], { encoding: "utf8" }).trim();
+    const [id, width] = execFileSync("swift", [swift, title], { encoding: "utf8" }).trim().split(" ");
+    return { id, widthPoints: Number(width) };
   } catch {
     throw new Error(
       "Could not find the VS Code window. Give the app running this Screen Recording permission " +
@@ -47,15 +49,22 @@ function windowId(): string {
   }
 }
 
+const pixelWidth = (file: string) =>
+  Number(/pixelWidth: (\d+)/.exec(execFileSync("sips", ["-g", "pixelWidth", file], { encoding: "utf8" }))![1]);
+
 async function capture(file: string, keep: number, width: number) {
   // Window lookups and captures occasionally fail right after a window repaint.
   let last: unknown;
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
-      execFileSync("screencapture", ["-x", "-o", `-l${windowId()}`, file]);
+      const window = findWindow();
+      execFileSync("screencapture", ["-x", "-o", `-l${window.id}`, file]);
       if (fs.existsSync(file) && fs.statSync(file).size > 5000) {
+        // Sizes are in points; the capture is 1x or 2x depending on the display.
+        const scale = pixelWidth(file) / window.widthPoints;
+        const px = (points: number) => String(Math.round(points * scale));
         // Drop the title bar ("Extension Development Host" in a test run) and the empty editor below.
-        execFileSync("swift", [path.resolve(__dirname, "../../test/screenshots/crop.swift"), file, "64", String(keep), String(width)]);
+        execFileSync("swift", [path.resolve(__dirname, "../../test/screenshots/crop.swift"), file, px(32), px(keep), px(width)]);
         return;
       }
     } catch (error) {

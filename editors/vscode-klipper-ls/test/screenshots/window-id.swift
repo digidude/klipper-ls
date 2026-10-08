@@ -1,4 +1,4 @@
-// Prints the CoreGraphics window id of the VS Code window whose title contains argv[1].
+// Prints "<window id> <width in points>" of the VS Code window whose title contains argv[1].
 // Needs Screen Recording permission, or macOS hides window titles.
 import CoreGraphics
 import Foundation
@@ -10,8 +10,10 @@ for w in windows {
     let title = w[kCGWindowName as String] as? String ?? ""
     let layer = w[kCGWindowLayer as String] as? Int ?? -1
     if layer == 0, owner.contains("Code") || owner.contains("Electron"), title.contains(needle),
-       let id = w[kCGWindowNumber as String] as? Int {
-        print(id)
+       let id = w[kCGWindowNumber as String] as? Int,
+       let bounds = w[kCGWindowBounds as String] as? [String: Any],
+       let width = bounds["Width"] as? Double {
+        print("\(id) \(Int(width))")
         exit(0)
     }
 }
