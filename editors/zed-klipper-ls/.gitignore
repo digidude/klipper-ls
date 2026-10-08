@@ -1,0 +1,15 @@
+node_modules/
+*.dylib
+*.so
+*.wasm
+grammars/
+.DS_Store
+target/
+.claude/settings.local.json
+
+# Klipper checkout for development (GPL-3.0; never commit)
+/klipper/
+# Real printer configs for coverage tests (from github.com/digidude/voron; contains GPL files, never commit)
+/test-data/
+# Local Zed project settings (machine-specific paths)
+/.zed/

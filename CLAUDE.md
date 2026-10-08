@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-`klipper-ls`: an editor-neutral language server for Klipper config and G-code, plus the tree-sitter grammar it parses with. Clients live in other repos: [zed-klipper](https://github.com/digidude/zed-klipper) and [vscode-klipper-ls](https://github.com/digidude/vscode-klipper-ls). README is user-facing; CONTRIBUTING.md has the layout and workflows; this file is the working context.
+Monorepo (since 2026-10-08, was three repos): `klipper-ls`, an editor-neutral language server for Klipper config and G-code, at the root; the tree-sitter grammar it parses with in `grammar/`; and the two editor integrations in `editors/vscode-klipper-ls` and `editors/zed-klipper-ls` (both names may change later). README is user-facing; CONTRIBUTING.md has the layout and workflows; this file is the working context.
 
 ## Commands
 
@@ -12,7 +12,9 @@ cd grammar && npx tree-sitter generate && npx tree-sitter test
 cargo test coverage -- --ignored --nocapture     # real-data checks; env vars in CONTRIBUTING.md
 ```
 
-Node: this machine's nvm lives in `~/.local/share/nvm`; `nvm use 22.11.0` before `npx`.
+Node: this machine's nvm lives in `~/.local/share/nvm`; `export NVM_DIR=$HOME/.local/share/nvm; source $NVM_DIR/nvm.sh; nvm use 22.11.0` before `npx`/`npm`.
+
+Editors (details in CONTRIBUTING.md): VS Code `cd editors/vscode-klipper-ls && npm run test:unit` and `test:e2e` (needs `KLIPPER_LS_BIN=../../target/debug/klipper-ls`); Zed `cargo check --target wasm32-wasip2` in `editors/zed-klipper-ls`, then **zed: rebuild dev extension**.
 
 ## Decisions and why
 
@@ -27,6 +29,14 @@ Node: this machine's nvm lives in `~/.local/share/nvm`; `nvm use 22.11.0` before
 - **.gcode never gets a whole-file parse:** incremental sync + single-line lookup; tested on a 32 MB / 1.2M-line file.
 - **The macro index is rebuilt per request** from `printer.cfg` following `[include]`s (≈1 ms), not cached.
 
+## Editors
+
+- **Lockstep versions, one tag.** `v*` builds the four binaries and the `.vsix` into one release; both clients rely on the release having `klipper-ls-<target>.tar.gz` assets. The `.vsix` is stamped from the tag; bump Cargo.toml, the Zed `Cargo.toml`/`extension.toml` and the VS Code `package.json` by hand first.
+- **The contract between server and clients** is the asset names, the language ids (`klipper`, `gcode`; hover code fences say "Klipper"), the init option names and the grammar `rev`. Change them in one commit.
+- **Zed grammar pin is self-referential:** `editors/zed-klipper-ls/extension.toml` `rev` points at a pushed commit of this repo (`path = "grammar"`); commit and push grammar changes, then bump `rev`. Grammar changes reach Zed only by commit.
+- **Zed queries:** the later pattern wins; many themes (e.g. JetBrains Dark) don't define `variable.parameter` or `function.builtin`; prefer `attribute`, `keyword`, `function`, `type`, `constant`, `string.special`. The palette is deliberately small (trimmed 2026-10-07); `editors/zed-klipper-ls/docs/highlighting.md` is the token-to-color guide, update it with any `highlights.scm` change.
+- **VS Code:** `src/binary.ts` stays free of `vscode` imports (unit tests run under plain node). Highlighting is TextMate (no tree-sitter in VS Code), so semantic tokens from the server (issue #5) is the way to unify highlighting across editors. A settings change restarts the client because the server reads options once.
+
 ## Gotchas
 
 - tree-sitter lexing: precedence beats match length (then length, string-over-regex, rule order); numbers use `token(prec(1, …))`.
@@ -38,7 +48,7 @@ Node: this machine's nvm lives in `~/.local/share/nvm`; `nvm use 22.11.0` before
 
 ## Verify against real data
 
-Unit tests use small fixtures; correctness claims come from real files. After grammar or server changes, parse a large set of real configs (0 errors) and run the two coverage tests. Real configs and slicer output live in the sibling `zed-klipper/test-data/` (gitignored, third-party GPL files); the Pi's Moonraker is read-only (GET only).
+Unit tests use small fixtures; correctness claims come from real files. After grammar or server changes, parse a large set of real configs (0 errors) and run the two coverage tests. Real configs and slicer output live in `test-data/`, and a shallow Klipper checkout in `klipper/` (both gitignored, third-party GPL, never commit; the test data's gcodes are 666 MB pulled from the printer); the Pi's Moonraker is read-only (GET only).
 
 ## Commits
 

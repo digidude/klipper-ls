@@ -1,0 +1,135 @@
+{
+  "name": "klipper-ls",
+  "displayName": "Klipper Language Server",
+  "description": "Hover docs and go-to-definition for Klipper printer.cfg, macros and sliced G-code, powered by klipper-ls.",
+  "version": "0.3.0",
+  "publisher": "digidude",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/digidude/klipper-ls",
+    "directory": "editors/vscode-klipper-ls"
+  },
+  "bugs": {
+    "url": "https://github.com/digidude/klipper-ls/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "klipper",
+    "3d printing",
+    "printer.cfg",
+    "gcode",
+    "jinja"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "languages": [
+      {
+        "id": "klipper",
+        "aliases": [
+          "Klipper",
+          "klipper"
+        ],
+        "extensions": [
+          ".cfg"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "gcode",
+        "aliases": [
+          "G-code",
+          "gcode"
+        ],
+        "extensions": [
+          ".gcode",
+          ".gco"
+        ]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "klipper",
+        "scopeName": "source.klipper",
+        "path": "./syntaxes/klipper.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Klipper",
+      "properties": {
+        "klipper.server.path": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Path to a `klipper-ls` binary. Empty: use `klipper-ls` from `PATH`, else download the latest release."
+        },
+        "klipper.klipperDocs": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Klipper's `docs` folder, e.g. `~/klipper/docs`. Empty: found next to your config, then downloaded once."
+        },
+        "klipper.klipperConfig": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "`printer.cfg` (or its folder). Used to find your macros when hovering in `.gcode` files."
+        },
+        "klipper.marlinDocs": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "A Marlin documentation checkout, or its `_gcode` folder. Empty: downloaded once."
+        },
+        "klipper.downloadDocs": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Download Klipper's and Marlin's docs when no local copy is found. Turn off to never use the network for docs."
+        },
+        "klipper.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace LSP traffic in the Klipper output channel."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "klipper.restartServer",
+        "title": "Klipper: Restart Language Server"
+      },
+      {
+        "command": "klipper.showOutput",
+        "title": "Klipper: Show Server Output"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --target=node18 --external:vscode --outfile=dist/extension.js --sourcemap",
+    "watch": "npm run build -- --watch",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "node --test --experimental-strip-types test/unit/*.test.ts",
+    "test:e2e": "npm run build && tsc -p test/tsconfig.json && node out-test/runTest.js",
+    "package": "npm run typecheck && npm run build && vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "vscode-languageclient": "9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.0",
+    "@types/vscode": "1.90.0",
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "3.2.1",
+    "esbuild": "0.24.0",
+    "typescript": "5.6.3",
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.1.0"
+  }
+}

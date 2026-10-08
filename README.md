@@ -6,8 +6,8 @@ A language server for [Klipper](https://www.klipper3d.org/) printer config. It s
 
 | Editor | Package |
 |---|---|
-| VS Code | [vscode-klipper-ls](https://github.com/digidude/vscode-klipper-ls) |
-| Zed | [zed-klipper](https://github.com/digidude/zed-klipper) |
+| VS Code | [`editors/vscode-klipper-ls`](editors/vscode-klipper-ls) |
+| Zed | [`editors/zed-klipper-ls`](editors/zed-klipper-ls) |
 | Anything else with LSP support (Neovim, Helix, Emacs, …) | run `klipper-ls`; see [Other editors](#other-editors) |
 
 ## Features

@@ -1,0 +1,5 @@
+("[" @open "]" @close)
+("{" @open "}" @close)
+("(" @open ")" @close)
+(jinja_statement ["{%" "{%-"] @open ["%}" "-%}"] @close)
+(gcode_string "\"" @open "\"" @close)

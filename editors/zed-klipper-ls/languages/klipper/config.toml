@@ -1,0 +1,25 @@
+name = "Klipper"
+grammar = "klipper"
+path_suffixes = ["cfg"]
+line_comments = ["# "]
+# Jinja comment; only meaningful inside gcode: templates.
+block_comment = { start = "{#", prefix = "", end = "#}", tab_size = 1 }
+tab_size = 2
+autoclose_before = ",]})"
+brackets = [
+    { start = "[", end = "]", close = true, newline = false },
+    { start = "{", end = "}", close = true, newline = false },
+    { start = "(", end = ")", close = true, newline = false },
+    { start = "\"", end = "\"", close = true, newline = false, not_in = ["string", "comment"] },
+    { start = "'", end = "'", close = false, newline = false, not_in = ["string", "comment"] },
+]
+
+# Indent after `gcode:` / `*_gcode:` and after a line that opens a Jinja block.
+increase_indent_pattern = "^\\s*([A-Za-z0-9_]*gcode\\s*[:=]\\s*$|\\{%-?\\s*(if|elif|else|for|macro)\\b.*%\\}\\s*$)"
+
+# Outdent the closers to the line that opened the block (see indents.scm).
+decrease_indent_patterns = [
+    { pattern = "^\\s*\\{%-?\\s*(elif|else|endif)\\b", valid_after = ["if", "elif"] },
+    { pattern = "^\\s*\\{%-?\\s*endfor\\b", valid_after = ["for"] },
+    { pattern = "^\\s*\\{%-?\\s*endmacro\\b", valid_after = ["macro"] },
+]

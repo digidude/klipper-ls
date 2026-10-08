@@ -1,0 +1,15 @@
+[package]
+name = "zed-klipper-ls"
+version = "0.3.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+# Zed compiles this to WebAssembly (wasm32-wasip2). It only tells Zed how to
+# start the language server; the server itself lives in server/.
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+zed_extension_api = "0.7.0"

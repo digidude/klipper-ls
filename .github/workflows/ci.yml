@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  server:
     strategy:
       matrix:
         os: [ubuntu-22.04, macos-latest]
@@ -16,3 +16,36 @@ jobs:
       - run: rustup toolchain install stable --profile minimal --component clippy && rustup default stable
       - run: cargo test --locked
       - run: cargo clippy --locked -- -D warnings
+
+  vscode:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: editors/vscode-klipper-ls
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: editors/vscode-klipper-ls/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run package
+      # A real VS Code against a server built from this commit.
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      - run: cargo build --locked --manifest-path ../../Cargo.toml
+      - run: xvfb-run -a npm run test:e2e
+        env:
+          KLIPPER_LS_BIN: ${{ github.workspace }}/target/debug/klipper-ls
+
+  zed:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: editors/zed-klipper-ls
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal --target wasm32-wasip2 && rustup default stable
+      - run: cargo check --locked --target wasm32-wasip2

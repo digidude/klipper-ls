@@ -3,6 +3,8 @@
 ## Layout
 
 ```
+editors/vscode-klipper-ls/  VS Code extension (TypeScript): starts the server, TextMate grammar
+editors/zed-klipper-ls/     Zed extension: wasm shim, Zed queries, docs/highlighting.md
 Cargo.toml, build.rs        build.rs compiles grammar/src into the binary
 src/knowledge/klipper.rs    Klipper's G-Codes.md / Config_Reference.md, and handlers in klippy/
 src/knowledge/status.rs     Klipper's status reference (printer.* fields)
@@ -76,10 +78,51 @@ The scanner also lexes option keys, so a `gcode`/`*_gcode` key can switch its va
 
 Jinja is parsed inside this grammar rather than injected, because Klipper uses `{ }` rather than `{{ }}` and G-code and Jinja share lines (`M140 S{BED}`).
 
+## Editors
+
+Both clients are thin; the server does the work. They share a contract with it: the release asset names, the language ids (`klipper`, `gcode`; hover code fences use the name "Klipper"), the `initializationOptions` names, and the grammar `rev`. Change those in one commit.
+
+### VS Code (`editors/vscode-klipper-ls`)
+
+Needs Node (22).
+
+```sh
+cd editors/vscode-klipper-ls && npm install
+npm run build && npm run test:unit
+KLIPPER_LS_BIN=../../target/debug/klipper-ls KLIPPER_DOCS=../../klipper/docs npm run test:e2e   # real VS Code, ~300 MB first run
+```
+
+F5 ("Run Extension") debugs it. `src/binary.ts` must stay free of `vscode` imports so the unit tests run under plain node. The server reads options once at startup, so a settings change restarts the client.
+
+### Zed (`editors/zed-klipper-ls`)
+
+Install it with **zed: install dev extension** and pick `editors/zed-klipper-ls`. Query, `config.toml` and shim changes need only **zed: rebuild dev extension**. Validate queries against real files:
+
+```sh
+cd grammar && npx tree-sitter query ../editors/zed-klipper-ls/languages/klipper/highlights.scm path/to/printer.cfg
+```
+
+Zed builds the grammar from the `rev` in `editors/zed-klipper-ls/extension.toml`, so a grammar change reaches Zed only by commit: commit and push the grammar change, put the new SHA in `rev`, commit, then rebuild the dev extension. To iterate without pushing, temporarily point the grammar `repository` at `file:///…/klipper-ls` (never commit that). Update `docs/highlighting.md` with any `highlights.scm` change.
+
+Machine-specific Zed settings go in a gitignored `.zed/settings.json` at the repo root, e.g. `{ "lsp": { "klipper-ls": { "initialization_options": { "klipperConfig": "…/printer.cfg" } } } }`.
+
+## Test data
+
+`test-data/` (gitignored: real configs include third-party GPL files) feeds the coverage tests:
+
+```sh
+git clone https://github.com/digidude/voron.git /tmp/voron
+mkdir -p test-data/voron && cp -R /tmp/voron/printer_data test-data/voron/
+```
+
+Slicer output isn't in that repo. Copy a printer's `~/printer_data/gcodes` into `test-data/<printer>/printer_data/gcodes/` (Moonraker's read-only file API works: `GET /server/files/list?root=gcodes`, then `GET /server/files/gcodes/<path>`). Next to `printer_data/config/`, `.gcode` files find that config automatically.
+
 ## Releasing
+
+One tag releases everything (lockstep versions):
 
 ```sh
 git tag v0.3.0 && git push origin v0.3.0
 ```
 
-The `release` workflow builds macOS and Linux archives named `klipper-ls-<target>.tar.gz`. The Zed and VS Code packages download those names, so don't rename them.
+The `release` workflow builds macOS and Linux archives named `klipper-ls-<target>.tar.gz` and a `klipper-ls-<version>.vsix`, and attaches them to one release. Both clients download the archive names, so don't rename them. Bump the versions in `Cargo.toml`, `editors/zed-klipper-ls/{Cargo.toml,extension.toml}` and `editors/vscode-klipper-ls/package.json` first (the workflow stamps the `.vsix` from the tag).

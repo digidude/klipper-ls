@@ -3,3 +3,10 @@ node_modules/
 .DS_Store
 /klipper/
 /test-data/
+/.zed/
+.claude/settings.local.json
+*.wasm
+*.vsix
+.vscode-test/
+dist/
+out-test/

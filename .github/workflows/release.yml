@@ -1,9 +1,9 @@
-# Builds klipper-ls for each platform when a version tag is pushed and
-# attaches the archives to a GitHub release. The Zed and VS Code extensions
-# download `klipper-ls-<target>.tar.gz` from the latest release, so the asset
-# names below are part of their contract.
+# Builds klipper-ls for each platform, plus the VS Code extension, when a
+# version tag is pushed, and attaches everything to one GitHub release. The
+# Zed and VS Code extensions download `klipper-ls-<target>.tar.gz` from the
+# latest release, so the asset names below are part of their contract.
 #
-#   git tag v0.2.0 && git push origin v0.2.0
+#   git tag v0.3.0 && git push origin v0.3.0
 name: release
 
 on:
@@ -44,8 +44,31 @@ jobs:
           path: klipper-ls-${{ matrix.target }}.tar.gz
           if-no-files-found: error
 
+  vsix:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: editors/vscode-klipper-ls
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: editors/vscode-klipper-ls/package-lock.json
+      - run: npm ci
+      - run: npm run test:unit
+      # The extension version follows the tag.
+      - run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+      - run: npm run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: klipper-ls-vsix
+          path: editors/vscode-klipper-ls/*.vsix
+          if-no-files-found: error
+
   release:
-    needs: build
+    needs: [build, vsix]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -57,4 +80,4 @@ jobs:
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/*.tar.gz --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" dist/*.tar.gz dist/*.vsix --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
