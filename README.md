@@ -23,6 +23,7 @@ These work in Klipper config and in sliced `.gcode` files:
 - **Sections and options** (`[heater_bed]`, `rotation_distance`): the matching entry in Klipper's config reference.
 - **Status fields in templates** (`printer.toolhead.position`, `printer['heater_generic chamber'].target`): the matching entry in Klipper's status reference. `printer["gcode_macro X"].var` shows the variable's initial value, and flags a variable the macro doesn't define.
 - **Go to definition:** from a macro call to its `[gcode_macro]`, across `[include]`d files; from `[include macros/*.cfg]` to the files; from built-ins into Klipper's docs.
+- **Diagnostics** for what's wrong that can be known without running Klipper: unknown Jinja filters and tests (`|integer`), pin chips that nothing in the config provides (`^!EBBCna:PB6`), `printer.x` objects no section creates, `printer["gcode_macro X"].y` for a variable `X` doesn't define, and commands Klipper doesn't register. See [Diagnostics](#diagnostics) for how sure each is.
 - **Highlighting** (semantic tokens): config files and macros, including the G-code and Jinja inside `[gcode_macro]`, colored from the real parse tree, the same as in Zed. In `.gcode` files only the lines on screen are looked at.
 
 Large slicer files are fine: hovers and highlighting read only the lines they need, so a 32 MB file answers instantly.
@@ -74,9 +75,24 @@ Everything works without configuration. The server reads these `initializationOp
   "klipperDocs": "~/klipper/docs",           // Klipper's docs folder
   "klipperConfig": "~/printer_data/config",  // printer.cfg (or its folder), used for .gcode files
   "marlinDocs": "~/src/MarlinDocumentation", // a checkout, or its _gcode folder
-  "downloadDocs": true                       // false = never use the network
+  "downloadDocs": true,                      // false = never use the network
+  "diagnostics": true                        // false = no squiggles, only hovers
 }
 ```
+
+### Diagnostics
+
+Every check comes from something the server can read: Jinja 2.11's closed list of filters and tests, the sections your config actually defines, and, when Klipper's source (`klippy/`) is available, what that source registers. How sure it is decides the severity:
+
+| Severity | When |
+|---|---|
+| **Error** | Your config is complete as far as the server can see (every `[include]` resolved, every section type known) *and* Klipper's source was scanned: Klipper itself would reject this. |
+| **Warning** | Same, but only the docs were available. Unknown commands are always at most a warning, and Jinja filters and tests are always a warning because a newer Jinja than Klipper pins adds a few. |
+| **Hint** | A section type the server doesn't know (a plugin such as Beacon or `led_effect`), or an `[include]` of a file that only exists on the printer, could supply what looks missing, so it only points at it. |
+
+Reading an optional object is not an error in Klipper (the value is undefined; only reading *through* it fails), so `printer["gcode_macro X"]|default({})`, `... is defined` and `'gcode_macro X' in printer` are left alone, as is a macro variable read with `|default(...)`.
+
+Without Klipper's docs nothing that needs them runs; filter and test checks still do. Set `diagnostics` to `false` to turn all of it off.
 
 ### Where hover text comes from
 
@@ -117,7 +133,7 @@ The server sends semantic tokens, so a client that supports them gets highlighti
 - Plugins outside Klipper (Beacon, led_effect, …) aren't in Klipper's docs, so their options and commands get no hover.
 - Status fields that Klipper's reference doesn't list (such as `toolhead.estimated_print_time`) are reported as undocumented.
 - Settings are read once at startup; restart the server after changing them.
-- No diagnostics, completion or rename yet.
+- No completion or rename yet. Diagnostics cover the checks above and nothing else: no unknown-option or missing-required-option checks.
 - Semantic token colors depend on your editor theme. Punctuation (`=`, `:`, brackets) isn't tokenized; the editor's own grammar, if any, colors it.
 
 ## Contributing

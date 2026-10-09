@@ -1,7 +1,7 @@
 {
   "name": "klipper-ls",
   "displayName": "Klipper Language Server",
-  "description": "Hover docs, go-to-definition and highlighting for Klipper printer.cfg, macros and sliced G-code, powered by klipper-ls. Works alongside any Klipper syntax extension.",
+  "description": "Hover docs, go-to-definition, diagnostics and highlighting for Klipper printer.cfg, macros and sliced G-code, powered by klipper-ls. Works alongside any Klipper syntax extension.",
   "version": "0.3.0",
   "publisher": "digidude",
   "author": {
@@ -96,6 +96,12 @@
           "markdownDescription": "A Marlin documentation checkout, or its `_gcode` folder, for per-parameter detail on standard G-codes. Leave empty to download it once.",
           "order": 3,
           "scope": "machine-overridable"
+        },
+        "klipper.diagnostics": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Report what can be known to be wrong without running Klipper: unknown Jinja filters and tests, pin chips nothing in the config provides, `printer.*` objects no section creates, and commands Klipper doesn't register. Turn off to keep only hover and go-to-definition.",
+          "order": 5
         },
         "klipper.downloadDocs": {
           "type": "boolean",

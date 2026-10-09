@@ -6,6 +6,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use lsp_server::{ErrorCode, Notification, Request, Response};
+use lsp_types::notification::PublishDiagnostics;
+use lsp_types::PublishDiagnosticsParams;
 use lsp_types::notification::{
     DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
 };
@@ -22,6 +24,7 @@ use lsp_types::{
 use serde_json::Value;
 use tree_sitter::Tree;
 
+use crate::diagnostics;
 use crate::features::{self, Context, Target};
 use crate::gcode;
 use crate::highlight;
@@ -108,6 +111,8 @@ pub struct Server {
     klipper_config: Option<PathBuf>,
     /// `initialization_options.downloadDocs` (default true)
     download_docs: bool,
+    /// `initialization_options.diagnostics` (default true)
+    diagnostics: bool,
     loaded_klipper_docs: HashMap<PathBuf, Rc<KlipperDocs>>,
     /// Set after a failed download so we don't retry on every hover.
     klipper_docs_unavailable: bool,
@@ -130,6 +135,8 @@ impl Server {
             .and_then(Value::as_bool)
             .unwrap_or(true);
 
+        let diagnostics = options.get("diagnostics").and_then(Value::as_bool).unwrap_or(true);
+
         let mut workspace_roots: Vec<PathBuf> = params
             .workspace_folders
             .into_iter()
@@ -147,34 +154,80 @@ impl Server {
             klipper_docs_dir: path_option("klipperDocs"),
             klipper_config: path_option("klipperConfig"),
             download_docs,
+            diagnostics,
             loaded_klipper_docs: HashMap::new(),
             klipper_docs_unavailable: false,
             marlin: MarlinSlot::start(path_option("marlinDocs"), download_docs),
         }
     }
 
-    pub fn handle_notification(&mut self, notification: Notification) {
+    /// Returns the notifications to send back (diagnostics).
+    pub fn handle_notification(&mut self, notification: Notification) -> Vec<Notification> {
         match notification.method.as_str() {
             DidOpenTextDocument::METHOD => {
                 if let Ok(p) = serde_json::from_value::<DidOpenTextDocumentParams>(notification.params) {
                     let doc = p.text_document;
                     let kind = DocKind::detect(&doc.language_id, &doc.uri);
                     self.documents.insert(doc.uri, Document::new(kind, doc.text));
+                    return self.publish_diagnostics();
                 }
             }
             DidChangeTextDocument::METHOD => {
                 if let Ok(p) = serde_json::from_value::<DidChangeTextDocumentParams>(notification.params)
-                    && let Some(doc) = self.documents.get_mut(&p.text_document.uri) {
-                        doc.apply(p.content_changes);
-                    }
+                    && let Some(doc) = self.documents.get_mut(&p.text_document.uri)
+                {
+                    doc.apply(p.content_changes);
+                    return self.publish_diagnostics();
+                }
             }
             DidCloseTextDocument::METHOD => {
                 if let Ok(p) = serde_json::from_value::<DidCloseTextDocumentParams>(notification.params) {
-                    self.documents.remove(&p.text_document.uri);
+                    let closed = self.documents.remove(&p.text_document.uri).is_some_and(|d| d.kind == DocKind::Klipper);
+                    let mut out = Vec::new();
+                    if closed && self.diagnostics {
+                        // Clear what we published, so a closed file doesn't keep its squiggles in the Problems list.
+                        out.push(Self::diagnostics_notification(p.text_document.uri, Vec::new()));
+                    }
+                    return out;
                 }
             }
             _ => {}
         }
+        Vec::new()
+    }
+
+    fn diagnostics_notification(uri: Url, diagnostics: Vec<lsp_types::Diagnostic>) -> Notification {
+        Notification::new(
+            PublishDiagnostics::METHOD.to_string(),
+            PublishDiagnosticsParams::new(uri, diagnostics, None),
+        )
+    }
+
+    /// Diagnostics for every open config file: an edit in one file can change
+    /// what is wrong in another (a macro that vanished, a section removed).
+    fn publish_diagnostics(&mut self) -> Vec<Notification> {
+        if !self.diagnostics {
+            return Vec::new();
+        }
+        let uris: Vec<Url> = self
+            .documents
+            .iter()
+            .filter(|(_, d)| d.kind == DocKind::Klipper)
+            .map(|(u, _)| u.clone())
+            .collect();
+        let mut out = Vec::new();
+        for uri in uris {
+            let Ok(path) = uri.to_file_path() else { continue };
+            let index = index::build(&path, &self.open_texts());
+            let near: Vec<PathBuf> = path.parent().map(Path::to_path_buf).into_iter().collect();
+            // Never download docs just to check a file: the first hover does that.
+            let docs = self.klipper_docs(&near, false);
+            let Some(doc) = self.documents.get(&uri) else { continue };
+            let Some(tree) = &doc.tree else { continue };
+            let found = diagnostics::config_diagnostics(tree, &doc.text, &doc.lines, &index, docs.as_deref());
+            out.push(Self::diagnostics_notification(uri, found));
+        }
+        out
     }
 
     pub fn handle_request(&mut self, request: Request) -> Response {
@@ -264,7 +317,7 @@ impl Server {
         };
         let mut doc_search: Vec<PathBuf> = path.parent().map(Path::to_path_buf).into_iter().collect();
         doc_search.extend(printer_cfg.as_deref().and_then(Path::parent).map(Path::to_path_buf));
-        let klipper_docs = self.klipper_docs(&doc_search);
+        let klipper_docs = self.klipper_docs(&doc_search, true);
         let marlin = self.marlin.get();
         Some(Prepared { path, offset, index, klipper_docs, marlin })
     }
@@ -280,7 +333,7 @@ impl Server {
             .collect()
     }
 
-    fn klipper_docs(&mut self, near: &[PathBuf]) -> Option<Rc<KlipperDocs>> {
+    fn klipper_docs(&mut self, near: &[PathBuf], may_download: bool) -> Option<Rc<KlipperDocs>> {
         let mut starts = near.to_vec();
         starts.extend(self.workspace_roots.iter().cloned());
 
@@ -293,7 +346,7 @@ impl Server {
                 ));
                 return None;
             }
-            None if self.download_docs && !self.klipper_docs_unavailable => {
+            None if may_download && self.download_docs && !self.klipper_docs_unavailable => {
                 let cache = klipper::cache_dir()?;
                 match klipper::download(&cache) {
                     Ok(dir) => dir,

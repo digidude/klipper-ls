@@ -46,7 +46,10 @@ async function resolveServer(context: vscode.ExtensionContext): Promise<string> 
 /** Only non-empty settings are sent, so the server's own defaults apply otherwise. */
 function initializationOptions() {
   const c = settings();
-  const options: Record<string, string | boolean> = { downloadDocs: c.get<boolean>("downloadDocs", true) };
+  const options: Record<string, string | boolean> = {
+    downloadDocs: c.get<boolean>("downloadDocs", true),
+    diagnostics: c.get<boolean>("diagnostics", true),
+  };
   for (const key of ["klipperDocs", "klipperConfig", "marlinDocs"]) {
     const value = c.get<string>(key, "").trim();
     if (value) options[key] = expandHome(value);

@@ -6,7 +6,7 @@
 //! version actually running; otherwise the files are downloaded once from
 //! GitHub and cached.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -121,6 +121,11 @@ pub struct Docs {
     /// Command handlers found in Klipper's source (`klippy/`), when the docs
     /// come from a full checkout: name -> (file, line).
     handlers: Option<HashMap<String, (PathBuf, u32)>>,
+    /// Pin chips (`register_chip('probe', ...)`) and printer objects
+    /// (`add_object('toolhead', ...)`) that the source registers under a
+    /// literal name, when it was scanned. Names built at runtime
+    /// (`"%s_%s" % ...`) aren't here; the config's own sections supply those.
+    source_names: Option<SourceNames>,
     /// Optional: older downloaded caches don't have it.
     status: Option<StatusDocs>,
 }
@@ -133,7 +138,10 @@ impl Docs {
         docs.parse_gcodes(&fs::read_to_string(&gcodes)?, &gcodes);
         docs.parse_config_reference(&fs::read_to_string(&reference)?, &reference);
         let klippy = dir.parent().map(|checkout| checkout.join("klippy"));
-        docs.handlers = klippy.filter(|k| k.is_dir()).map(|k| scan_handlers(&k));
+        if let Some(scan) = klippy.filter(|k| k.is_dir()).map(|k| scan_source(&k)) {
+            docs.handlers = Some(scan.handlers);
+            docs.source_names = Some(scan.names);
+        }
         let status = dir.join(status::FILE);
         docs.status = fs::read_to_string(&status).ok().map(|text| StatusDocs::parse(&text, &status));
         Ok(docs)
@@ -151,6 +159,44 @@ impl Docs {
             },
             None => Support::Unknown { source_checked: false },
         }
+    }
+
+    /// Whether Klipper's source was scanned, which is what lets us say
+    /// "Klipper doesn't know this" instead of "the docs don't mention it".
+    pub fn source_scanned(&self) -> bool {
+        self.handlers.is_some()
+    }
+
+    /// Whether Klipper's source has a module that loads sections of type
+    /// `ty`. None without the source.
+    pub fn source_module(&self, ty: &str) -> Option<bool> {
+        self.source_names.as_ref().map(|n| n.modules.contains(ty))
+    }
+
+    /// Chip names the source registers under a literal name.
+    pub fn source_chips(&self) -> impl Iterator<Item = &str> {
+        self.source_names.iter().flat_map(|n| n.chips.iter().map(String::as_str))
+    }
+
+    /// Printer objects the source registers under a literal name.
+    pub fn source_objects(&self) -> impl Iterator<Item = &str> {
+        self.source_names.iter().flat_map(|n| n.objects.iter().map(String::as_str))
+    }
+
+    #[cfg(test)]
+    pub fn with_source_names(mut self, chips: &[&str], objects: &[&str]) -> Self {
+        self.source_names = Some(SourceNames {
+            chips: chips.iter().map(|n| n.to_string()).collect(),
+            objects: objects.iter().map(|n| n.to_string()).collect(),
+            modules: HashSet::new(),
+        });
+        self
+    }
+
+    #[cfg(test)]
+    pub fn with_status(mut self, text: &str) -> Self {
+        self.status = Some(StatusDocs::parse(text, Path::new(status::FILE)));
+        self
     }
 
     #[cfg(test)]
@@ -525,11 +571,26 @@ impl Docs {
     }
 }
 
-/// Command handlers in Klipper's Python source. Klipper registers commands
-/// either by name (`register_command('M73', ...)`) or by looping over a list
-/// and looking up `cmd_<NAME>` methods, so both spellings count.
-fn scan_handlers(klippy: &Path) -> HashMap<String, (PathBuf, u32)> {
+#[derive(Debug, Default)]
+struct SourceNames {
+    chips: HashSet<String>,
+    objects: HashSet<String>,
+    /// Section types Klipper can load: `klippy/extras/<type>.py` (or a
+    /// package of that name) and the modules directly under `klippy/`.
+    modules: HashSet<String>,
+}
+
+struct SourceScan {
+    handlers: HashMap<String, (PathBuf, u32)>,
+    names: SourceNames,
+}
+
+/// What Klipper's Python source registers. Commands come either by name
+/// (`register_command('M73', ...)`) or from looping over a list and looking
+/// up `cmd_<NAME>` methods, so both spellings count.
+fn scan_source(klippy: &Path) -> SourceScan {
     let mut handlers = HashMap::new();
+    let mut names = SourceNames::default();
     let mut stack = vec![klippy.to_path_buf()];
     while let Some(dir) = stack.pop() {
         let Ok(entries) = fs::read_dir(&dir) else { continue };
@@ -547,10 +608,36 @@ fn scan_handlers(klippy: &Path) -> HashMap<String, (PathBuf, u32)> {
                 for name in handler_names(line) {
                     handlers.entry(name).or_insert_with(|| (path.clone(), number as u32));
                 }
+                names.chips.extend(literal_argument(line, "register_chip("));
+                names.objects.extend(literal_argument(line, "add_object("));
             }
         }
     }
-    handlers
+    for dir in [klippy.to_path_buf(), klippy.join("extras")] {
+        let Ok(entries) = fs::read_dir(&dir) else { continue };
+        for entry in entries.filter_map(Result::ok) {
+            let path = entry.path();
+            let stem = path.file_stem().and_then(|s| s.to_str());
+            let is_module = path.extension().is_some_and(|e| e == "py") || path.join("__init__.py").is_file();
+            if let (Some(stem), true) = (stem, is_module) {
+                names.modules.insert(stem.to_string());
+            }
+        }
+    }
+    SourceScan { handlers, names }
+}
+
+/// The string literal that is the first argument of `call`, when it is the
+/// whole argument: `'probe'` yes, `"%s_%s" % x` and `'heater ' + name` no.
+fn literal_argument(line: &str, call: &str) -> Option<String> {
+    let rest = line.split_once(call)?.1.trim_start();
+    let quote = rest.chars().next().filter(|c| matches!(c, '\'' | '"'))?;
+    let body = &rest[1..];
+    let end = body.find(quote)?;
+    let literal = &body[..end];
+    let after = body[end + 1..].trim_start();
+    let whole = after.is_empty() || after.starts_with([',', ')']);
+    (whole && !literal.is_empty() && !literal.contains(['%', '{', ' '])).then(|| literal.to_string())
 }
 
 fn handler_names(line: &str) -> Vec<String> {
@@ -845,6 +932,14 @@ fn fetch(dir: &Path, file: &str, timeout: Duration) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn literal_arguments_are_only_whole_literals() {
+        assert_eq!(literal_argument("ppins.register_chip('probe', self)", "register_chip(").as_deref(), Some("probe"));
+        assert_eq!(literal_argument("register_chip(\"%s_%s\" % (a, b), self)", "register_chip("), None);
+        assert_eq!(literal_argument("add_object('heater ' + name, h)", "add_object("), None);
+        assert_eq!(literal_argument("add_object('toolhead', t)", "add_object(").as_deref(), Some("toolhead"));
+    }
 
     const GCODES_MD: &str = "\
 # G-Codes
