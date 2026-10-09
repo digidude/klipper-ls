@@ -1,9 +1,9 @@
-// Compile the tree-sitter grammar from grammar/ so the server parses
+// Compile the tree-sitter grammar from syntax/grammar/ so the server parses
 // exactly what the editor highlights.
 use std::path::Path;
 
 fn main() {
-    let src = Path::new("grammar/src");
+    let src = Path::new("syntax/grammar/src");
     cc::Build::new()
         .include(src)
         .file(src.join("parser.c"))

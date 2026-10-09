@@ -29,6 +29,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Install Rust target
         run: |
           rustup toolchain install stable --profile minimal --target ${{ matrix.target }}
@@ -51,6 +53,8 @@ jobs:
         working-directory: editors/vscode-klipper-ls
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22

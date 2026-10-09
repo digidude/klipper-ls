@@ -23,7 +23,7 @@ use crate::position::LineIndex;
 use crate::syntax;
 
 /// Shared with the Zed extension on purpose; see the module comment.
-const HIGHLIGHTS: &str = include_str!("../editors/zed-klipper-ls/languages/klipper/highlights.scm");
+const HIGHLIGHTS: &str = include_str!("../syntax/zed/languages/klipper/highlights.scm");
 
 /// Cap on one range request, so a client that asks for a whole 1M-line file
 /// still gets an answer in milliseconds.

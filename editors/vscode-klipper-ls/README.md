@@ -1,5 +1,7 @@
 # Klipper Language Server for VS Code
 
+> **Pairs with [Klipper Syntax](https://github.com/digidude/klipper-syntax)**, which supplies a TextMate grammar and editing configuration. It is optional: this extension works on its own (colors then come from the server's semantic tokens) and with other Klipper syntax extensions such as dannymcgee.klipper. Klipper Syntax is how your files *look*; this is what makes them *know* things.
+
 Hover docs, go-to-definition and highlighting for [Klipper](https://www.klipper3d.org/) `printer.cfg`, your macros and sliced `.gcode`, powered by [klipper-ls](https://github.com/digidude/klipper-ls). Hover any command, option, macro or `printer.*` field to see what it does in Klipper, and jump from a macro call to its definition, including the G-code and Jinja2 inside `[gcode_macro]` blocks.
 
 > **Early release: feedback and corner cases wanted.** klipper-ls is new and has only been run on a handful of real setups. I'm looking for the files it handles badly: a hover that is wrong or missing, a macro it can't find, odd highlighting, a slow file. [Open an issue](https://github.com/digidude/klipper-ls/issues/new/choose); the forms ask for what's needed. Please remove secrets and personal details from anything you paste.
@@ -74,7 +76,7 @@ On Windows, build the server (`cargo install --git https://github.com/digidude/k
 
 ## Using it with another Klipper extension
 
-klipper-ls works alongside [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper), which provides a richer TextMate grammar. If you prefer its colors, keep both installed and tell VS Code to open your files with its language:
+klipper-ls works alongside [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper), an alternative to Klipper Syntax with snippets and extras. If you prefer its colors, keep both installed and tell VS Code to open your files with its language:
 
 ```jsonc
 "files.associations": { "*.cfg": "klipper-cfg", "*.gcode": "klipper-gcode" }

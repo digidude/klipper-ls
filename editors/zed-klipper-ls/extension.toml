@@ -1,26 +1,18 @@
-id = "klipper"
-name = "Klipper"
+id = "klipper-ls"
+name = "Klipper Language Server"
 version = "0.3.0"
 schema_version = 1
 authors = ["Dan Klaussen"]
-description = "Klipper printer.cfg support: highlighting for config, G-code and Jinja2 macros, plus hover docs and go-to-definition from klipper-ls."
+description = "Hover docs and go-to-definition for Klipper printer.cfg, macros and sliced G-code, from klipper-ls. Pairs with the Klipper (syntax) extension."
 repository = "https://github.com/digidude/klipper-ls"
-
-[grammars.klipper]
-# The grammar lives at the root of this same repository (grammar/). Zed fetches
-# and builds it at `rev`, so after a grammar change: commit, push, then bump
-# `rev` to the pushed commit. While iterating locally, temporarily point
-# `repository` at "file:///path/to/klipper-ls" (and never commit that).
-repository = "https://github.com/digidude/klipper-ls"
-rev = "3e0ab8cccd4b52f0b16406ba4487fb70400206b5"
-path = "grammar"
 
 [language_servers.klipper-ls]
 name = "klipper-ls"
-# "G-code" is defined by another extension (e.g. ChocolateNao/zed-gcode); the
-# server attaches to it when that extension is installed. Before publishing,
-# consider `opt_in_languages = ["G-code"]`: that extension also claims CNC
-# formats, where Klipper/Marlin hovers would be wrong.
+# Both languages are defined by other extensions: "Klipper" by the Klipper
+# extension (github.com/digidude/klipper-syntax), "G-code" by e.g.
+# ChocolateNao/zed-gcode. Zed can't declare a dependency, so the user installs
+# both. Before publishing, consider `opt_in_languages = ["G-code"]`: the G-code
+# extension also claims CNC formats, where Klipper/Marlin hovers would be wrong.
 languages = ["Klipper", "G-code"]
 
 [language_servers.klipper-ls.language_ids]
