@@ -5,11 +5,15 @@
 //! - Hover a section or option for its entry in Klipper's config reference.
 //! - Go to definition jumps from a macro call to its `[gcode_macro]`, from
 //!   `[include]` to the file, and from built-ins into the reference docs.
+//! - Diagnostics flag what a config gets wrong that can be known without
+//!   running Klipper: unknown Jinja filters, pin chips, printer objects and
+//!   commands.
 //! - The same works in `.gcode` files, where standard codes also get Marlin's
 //!   per-parameter reference, marked with what Klipper ignores.
 //!
 //! It speaks LSP over stdio and logs to stderr.
 
+mod diagnostics;
 mod features;
 mod gcode;
 mod highlight;
@@ -58,7 +62,11 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
                 let response = server.handle_request(request);
                 connection.sender.send(Message::Response(response))?;
             }
-            Message::Notification(notification) => server.handle_notification(notification),
+            Message::Notification(notification) => {
+                for outgoing in server.handle_notification(notification) {
+                    connection.sender.send(Message::Notification(outgoing))?;
+                }
+            }
             Message::Response(_) => {}
         }
     }

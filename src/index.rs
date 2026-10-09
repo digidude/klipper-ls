@@ -37,10 +37,33 @@ pub struct MacroDef {
     pub variables: Vec<(String, String)>,
 }
 
+/// A `[type name]` header, as written.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SectionRef {
+    pub ty: String,
+    pub name: Option<String>,
+}
+
+impl SectionRef {
+    /// The printer object this section creates: `heater_generic chamber`.
+    pub fn object_name(&self) -> String {
+        match &self.name {
+            Some(name) => format!("{} {}", self.ty, name.split_whitespace().collect::<Vec<_>>().join(" ")),
+            None => self.ty.clone(),
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Index {
     pub root: PathBuf,
     pub macros: HashMap<String, Vec<MacroDef>>,
+    /// Every section header in printer.cfg and what it includes.
+    pub sections: Vec<SectionRef>,
+    /// An `[include]` of a single file that doesn't exist here (typically
+    /// `/home/pi/...`). Whatever it defines is unknown, so checks that
+    /// depend on the full config must not assert anything.
+    pub unresolved_includes: bool,
 }
 
 impl Index {
@@ -126,8 +149,17 @@ pub fn build_from(printer_cfg: &Path, also: Option<&Path>, open: &HashMap<PathBu
             if section.kind() != "section" {
                 continue;
             }
+            if let Some((ty, name)) = section_header(section, &text) {
+                index.sections.push(SectionRef { ty: ty.to_string(), name: name.map(str::to_string) });
+            }
             match section_header(section, &text) {
-                Some(("include", Some(pattern))) => queue.extend(resolve_include(&path, pattern)),
+                Some(("include", Some(pattern))) => {
+                    let files = resolve_include(&path, pattern);
+                    if files.is_empty() && !pattern.contains(['*', '?', '[']) {
+                        index.unresolved_includes = true;
+                    }
+                    queue.extend(files);
+                }
                 Some(("gcode_macro", Some(_))) => {
                     if let Some(def) = parse_macro(section, &text, &path, &lines) {
                         index.macros.entry(def.name.clone()).or_default().push(def);

@@ -93,6 +93,7 @@ klipper-ls then attaches to those files and adds hover and go-to-definition. It 
 | `klipper.klipperConfig` | `printer.cfg` (or its folder), used to find your macros from `.gcode` files. |
 | `klipper.marlinDocs` | A Marlin documentation checkout, or its `_gcode` folder. Default: downloaded once. |
 | `klipper.downloadDocs` | `false` = never use the network for docs. |
+| `klipper.diagnostics` | `false` = turn off diagnostics (unknown filters, pin chips, printer objects, commands). |
 | `klipper.trace.server` | `off`, `messages` or `verbose`: log the LSP traffic in the Klipper output channel. |
 
 Changing a setting restarts the server. Commands: **Klipper: Restart Language Server**, **Klipper: Show Server Output**.

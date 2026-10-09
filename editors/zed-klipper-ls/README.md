@@ -42,7 +42,8 @@ Everything works without configuration. These optional settings go in Zed's `set
       "klipperDocs": "~/klipper/docs",             // Klipper's docs folder
       "klipperConfig": "~/printer_data/config",    // printer.cfg (or its folder), used for .gcode files
       "marlinDocs": "~/src/MarlinDocumentation",   // a checkout, or its _gcode folder
-      "downloadDocs": true                         // false = never use the network
+      "downloadDocs": true,                        // false = never use the network
+      "diagnostics": true                          // false = no squiggles, only hovers
     }
   }
 }
