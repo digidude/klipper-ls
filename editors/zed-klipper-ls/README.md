@@ -1,6 +1,10 @@
 # Klipper for Zed
 
-[Klipper](https://www.klipper3d.org/) support for [Zed](https://zed.dev): syntax highlighting for `printer.cfg` and its includes, including the G-code and Jinja2 inside `[gcode_macro]` blocks, plus hover docs and go-to-definition from [`klipper-ls`](https://github.com/digidude/klipper-ls), a separate language server this extension starts for you. (VS Code users: [vscode-klipper-ls](https://github.com/digidude/vscode-klipper-ls).)
+[Klipper](https://www.klipper3d.org/) support for [Zed](https://zed.dev): syntax highlighting for `printer.cfg` and its includes, including the G-code and Jinja2 inside `[gcode_macro]` blocks, plus hover docs and go-to-definition from [`klipper-ls`](https://github.com/digidude/klipper-ls), a separate language server this extension starts for you. (VS Code users: [`editors/vscode-klipper-ls`](https://github.com/digidude/klipper-ls/tree/main/editors/vscode-klipper-ls).)
+
+This extension supplies the **colors and editing** (queries, outline, brackets, indents). `klipper-ls` supplies the **hover and go-to-definition**.
+
+> **Early release: feedback and corner cases wanted.** klipper-ls is new and has only been run on a handful of real setups. I'm looking for the files it handles badly: a hover that is wrong or missing, a macro it can't find, odd highlighting, a slow file. [Open an issue](https://github.com/digidude/klipper-ls/issues/new/choose); the forms ask for what's needed. Please remove secrets and personal details from anything you paste.
 
 ## Features
 
@@ -31,11 +35,13 @@ This extension isn't in Zed's extension registry yet, so install it as a dev ext
 3. In Zed, open the command palette, run **zed: install dev extension**, and pick the `editors/zed-klipper-ls` folder.
 4. *(Optional)* For hovers in `.gcode` files, install the **G-code** extension from Zed's extension list. `klipper-ls` attaches to that language.
 
-`*.cfg` files open as Klipper. If your settings map `cfg` to another language, remove that mapping:
+`*.cfg` files open as Klipper. Zed's INI extension also claims `.cfg`, and when two extensions claim the same suffix Zed can pick either. If your `.cfg` files still open as INI, tell Zed which one you want in `settings.json`:
 
 ```jsonc
-"file_types": { "INI": ["cfg"] }   // delete this line
+"file_types": { "Klipper": ["cfg"] }
 ```
+
+If an older setting maps `cfg` to INI, remove it.
 
 To update, pull, run the `cargo install` again (if you built the server), then run **zed: rebuild dev extension** and **editor: restart language server**.
 
@@ -71,7 +77,7 @@ Where hover text comes from, how macros are found, and what each option means: s
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The server and the tree-sitter grammar live in [klipper-ls](https://github.com/digidude/klipper-ls).
+See [CONTRIBUTING.md](https://github.com/digidude/klipper-ls/blob/main/CONTRIBUTING.md). The server and the tree-sitter grammar live in [klipper-ls](https://github.com/digidude/klipper-ls).
 
 ## Credits and license
 

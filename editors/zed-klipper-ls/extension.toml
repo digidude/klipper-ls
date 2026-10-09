@@ -3,7 +3,7 @@ name = "Klipper"
 version = "0.3.0"
 schema_version = 1
 authors = ["Dan Klaussen"]
-description = "Klipper printer config (printer.cfg) with G-code and Jinja2 macro highlighting"
+description = "Klipper printer.cfg support: highlighting for config, G-code and Jinja2 macros, plus hover docs and go-to-definition from klipper-ls."
 repository = "https://github.com/digidude/klipper-ls"
 
 [grammars.klipper]

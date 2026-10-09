@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions about Klipper itself
+    url: https://www.klipper3d.org/Contact.html
+    about: This project only reads Klipper's docs. For how Klipper behaves, see Klipper's own channels.

@@ -1,7 +1,7 @@
 {
   "name": "klipper-ls",
   "displayName": "Klipper Language Server",
-  "description": "Hover docs and go-to-definition for Klipper printer.cfg, macros and sliced G-code, powered by klipper-ls.",
+  "description": "Hover docs, go-to-definition and highlighting for Klipper printer.cfg, macros and sliced G-code, powered by klipper-ls.",
   "version": "0.3.0",
   "publisher": "digidude",
   "author": {
@@ -19,15 +19,21 @@
   "engines": {
     "vscode": "^1.90.0"
   },
+  "preview": true,
+  "homepage": "https://github.com/digidude/klipper-ls#readme",
+  "qna": "https://github.com/digidude/klipper-ls/issues",
   "categories": [
     "Programming Languages"
   ],
   "keywords": [
     "klipper",
+    "klipper3d",
     "3d printing",
     "printer.cfg",
     "gcode",
-    "jinja"
+    "jinja",
+    "language server",
+    "lsp"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
@@ -72,27 +78,36 @@
         "klipper.server.path": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Path to a `klipper-ls` binary. Empty: use `klipper-ls` from `PATH`, else download the latest release."
+          "markdownDescription": "Path to a `klipper-ls` binary. Leave empty to use `klipper-ls` from your `PATH`, or else download the latest release automatically.",
+          "order": 0,
+          "scope": "machine-overridable"
         },
         "klipper.klipperDocs": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Klipper's `docs` folder, e.g. `~/klipper/docs`. Empty: found next to your config, then downloaded once."
+          "markdownDescription": "Klipper's `docs` folder, for example `~/klipper/docs`. Leave empty to use a `klipper/docs` folder near your config, or else download the docs once.",
+          "order": 1,
+          "scope": "machine-overridable"
         },
         "klipper.klipperConfig": {
           "type": "string",
           "default": "",
-          "markdownDescription": "`printer.cfg` (or its folder). Used to find your macros when hovering in `.gcode` files."
+          "markdownDescription": "Your `printer.cfg`, or the folder that contains it. Used to find your macros when you hover in a `.gcode` file.",
+          "order": 2,
+          "scope": "machine-overridable"
         },
         "klipper.marlinDocs": {
           "type": "string",
           "default": "",
-          "markdownDescription": "A Marlin documentation checkout, or its `_gcode` folder. Empty: downloaded once."
+          "markdownDescription": "A Marlin documentation checkout, or its `_gcode` folder, for per-parameter detail on standard G-codes. Leave empty to download it once.",
+          "order": 3,
+          "scope": "machine-overridable"
         },
         "klipper.downloadDocs": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Download Klipper's and Marlin's docs when no local copy is found. Turn off to never use the network for docs."
+          "markdownDescription": "Download Klipper's and Marlin's docs when no local copy is found. Turn off to never use the network for docs; hovers then show only your own macros.",
+          "order": 4
         },
         "klipper.trace.server": {
           "type": "string",
@@ -102,7 +117,8 @@
             "verbose"
           ],
           "default": "off",
-          "description": "Trace LSP traffic in the Klipper output channel."
+          "order": 5,
+          "markdownDescription": "Log the language server's LSP traffic in the **Klipper** output channel. Use `verbose` when reporting a bug."
         }
       }
     },

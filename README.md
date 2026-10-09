@@ -1,8 +1,8 @@
 # klipper-ls
 
-A language server for [Klipper](https://www.klipper3d.org/) printer config. It speaks LSP over stdio, so any editor can use it. It answers two questions while you edit `printer.cfg`, your macros, or sliced `.gcode`: *what does this do in Klipper?* and *where is it defined?*
+A language server for [Klipper](https://www.klipper3d.org/) printer config. It speaks LSP over stdio, so any editor can use it. It answers two questions while you edit `printer.cfg`, your macros, or sliced `.gcode`: *what does this do in Klipper?* and *where is it defined?* It is for people who edit Klipper config; it brings Klipper's own docs to the line you're on, and doesn't replace them.
 
-> Early release: feedback wanted. Open an issue with the file that confused it.
+> **Early release: feedback and corner cases wanted.** klipper-ls is new and has only been run on a handful of real setups. I'm looking for the files it handles badly: a hover that is wrong or missing, a macro it can't find, odd highlighting, a slow file. [Open an issue](https://github.com/digidude/klipper-ls/issues/new/choose); the forms ask for what's needed. Please remove secrets and personal details from anything you paste. See also [Known limitations](#known-limitations).
 
 | Editor | Package |
 |---|---|
@@ -21,7 +21,6 @@ These work in Klipper config and in sliced `.gcode` files:
 - **Sections and options** (`[heater_bed]`, `rotation_distance`): the matching entry in Klipper's config reference.
 - **Status fields in templates** (`printer.toolhead.position`, `printer['heater_generic chamber'].target`): the matching entry in Klipper's status reference. `printer["gcode_macro X"].var` shows the variable's initial value, and flags a variable the macro doesn't define.
 - **Go to definition:** from a macro call to its `[gcode_macro]`, across `[include]`d files; from `[include macros/*.cfg]` to the files; from built-ins into Klipper's docs.
-
 - **Highlighting** (semantic tokens): config files and macros, including the G-code and Jinja inside `[gcode_macro]`, colored from the real parse tree, the same as in Zed. In `.gcode` files only the lines on screen are looked at.
 
 Large slicer files are fine: hovers and highlighting read only the lines they need, so a 32 MB file answers instantly.
@@ -109,7 +108,7 @@ vim.lsp.config("klipper-ls", {
 vim.lsp.enable("klipper-ls")
 ```
 
-The server sends semantic tokens, so a client that enables them (Neovim does by default) gets highlighting without tree-sitter. The tree-sitter grammar in [`grammar/`](grammar) can also be used on its own.
+The server sends semantic tokens, so a client that supports them gets highlighting without tree-sitter. This is only verified in VS Code so far; Neovim and other clients are untested ([#16](https://github.com/digidude/klipper-ls/issues/16)), so reports from them are especially welcome. The tree-sitter grammar in [`grammar/`](grammar) can also be used on its own.
 
 ## Known limitations
 

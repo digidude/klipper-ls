@@ -1,0 +1,56 @@
+name: Bug report
+description: A hover, definition or colour is wrong, or the server misbehaves
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. This is an early release, so a clear report helps a lot, even a rough one.
+        **Please remove secrets and personal details** (WiFi names, API keys, usernames, home paths) from anything you paste.
+  - type: dropdown
+    id: editor
+    attributes:
+      label: Editor
+      options: [VS Code, Zed, Neovim, Other]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: klipper-ls version
+      description: Run `klipper-ls --version`, or look in the extension's server output.
+      placeholder: klipper-ls 0.3.0
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: macOS 15 / Ubuntu 24.04 / Windows 11 ...
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+  - type: textarea
+    id: snippet
+    attributes:
+      label: Smallest config or G-code that shows it
+      description: A few lines is ideal. Say which line to hover.
+      render: ini
+  - type: textarea
+    id: output
+    attributes:
+      label: Server output
+      description: "VS Code: command palette → **Klipper: Show Server Output**. Zed: **zed: open log**."
+      render: text
+  - type: checkboxes
+    id: safe
+    attributes:
+      label: Before sending
+      options:
+        - label: I removed secrets and personal details from the text above.
+          required: true

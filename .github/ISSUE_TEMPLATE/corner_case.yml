@@ -1,0 +1,46 @@
+name: Corner case, my setup does something odd
+description: It works on most things but not on yours. This is the most useful report for an early release.
+labels: ["corner case"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Corner cases are what this release is for. Unusual configs, plugins, include layouts, multi-MCU setups,
+        KlipperScreen or Moonraker files, odd slicer output, very large files.
+        **Please remove secrets and personal details** from anything you paste.
+  - type: textarea
+    id: setup
+    attributes:
+      label: What is unusual about your setup
+      description: Plugins (Beacon, led_effect ...), include layout, firmware fork, a slicer's start code, file size.
+    validations:
+      required: true
+  - type: textarea
+    id: snippet
+    attributes:
+      label: The part that misbehaves
+      description: A few lines, and which word you hovered or clicked.
+      render: ini
+  - type: textarea
+    id: seen
+    attributes:
+      label: What you see, and what you expected
+    validations:
+      required: true
+  - type: dropdown
+    id: editor
+    attributes:
+      label: Editor
+      options: [VS Code, Zed, Neovim, Other]
+  - type: input
+    id: version
+    attributes:
+      label: klipper-ls version
+      placeholder: klipper-ls 0.3.0
+  - type: checkboxes
+    id: safe
+    attributes:
+      label: Before sending
+      options:
+        - label: I removed secrets and personal details from the text above.
+          required: true
