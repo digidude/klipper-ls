@@ -1,4 +1,4 @@
-//! The tree-sitter-klipper grammar (compiled from grammar/ by build.rs) and
+//! The tree-sitter-klipper grammar (compiled from syntax/grammar/ by build.rs) and
 //! small helpers for walking its trees.
 
 use tree_sitter::{Language, Node, Parser, Tree};

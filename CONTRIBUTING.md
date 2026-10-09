@@ -5,9 +5,10 @@ Contributions are accepted under the project's MIT licence (inbound = outbound).
 ## Layout
 
 ```
-editors/vscode-klipper-ls/  VS Code extension (TypeScript): starts the server, TextMate grammar
-editors/zed-klipper-ls/     Zed extension: wasm shim, Zed queries, docs/highlighting.md
-Cargo.toml, build.rs        build.rs compiles grammar/src into the binary
+editors/vscode-klipper-ls/  VS Code extension (TypeScript): starts the server
+editors/zed-klipper-ls/     Zed extension: the wasm shim that starts the server
+syntax/                     submodule: github.com/digidude/klipper-syntax (grammar, queries, both syntax extensions)
+Cargo.toml, build.rs        build.rs compiles syntax/grammar/src into the binary
 src/knowledge/klipper.rs    Klipper's G-Codes.md / Config_Reference.md, and handlers in klippy/
 src/knowledge/status.rs     Klipper's status reference (printer.* fields)
 src/knowledge/marlin.rs     Marlin's G-code reference (YAML headers), download
@@ -17,12 +18,15 @@ src/features.rs             what's under the cursor -> hover / definition
 src/gcode.rs                the same for .gcode files, one line at a time
 src/highlight.rs            semantic tokens: runs Zed's highlights.scm and maps captures to LSP token types
 scripts/probe.py            talk to the server from a terminal (no editor needed)
-grammar/                    tree-sitter-klipper
+syntax/grammar/             tree-sitter-klipper (submodule, see below)
   grammar.js                the grammar
   src/scanner.c             external scanner: line continuations, option keys, G-code params
   src/parser.c              generated, committed
   test/corpus/              parser tests
+syntax/zed/languages/klipper/highlights.scm   what gets a color, here and in Zed
 ```
+
+`syntax/` is the [klipper-syntax](https://github.com/digidude/klipper-syntax) repository as a submodule: `git clone --recurse-submodules`, or `git submodule update --init` in an existing checkout. It owns the grammar, the highlight queries and the two syntax-only extensions (Zed **Klipper**, VS Code **Klipper Syntax**); this repo owns the server and its editor clients, **Klipper Language Server** for each. The two are meant to be installed together.
 
 ## Server
 
@@ -55,17 +59,15 @@ Test fixtures that look like Klipper's docs keep the structure but use their own
 
 ## Grammar
 
-Needs Node.js.
+The grammar lives in `syntax/grammar` (a submodule), so a grammar or query change is made in [klipper-syntax](https://github.com/digidude/klipper-syntax): see its CONTRIBUTING for generating, testing and parsing real configs there. Then bump the submodule here:
 
 ```sh
-cd grammar
-npm install
-npx tree-sitter generate          # after editing grammar.js; commit the regenerated src/parser.c
-npx tree-sitter test
-npx tree-sitter parse --quiet --stat path/to/*.cfg    # expect 0 errors
+cd syntax && git pull origin main && cd ..
+cargo test && cargo clippy           # the server compiles and queries what the submodule now holds
+git add syntax                       # commit the new pin
 ```
 
-Editors that use the grammar pin it by commit: after a grammar change, the Zed extension's `extension.toml` `rev` needs bumping.
+`build.rs` compiles `syntax/grammar/src` into the binary and `src/highlight.rs` `include_str!`s `syntax/zed/languages/klipper/highlights.scm`, so the server and the editors always agree on the parse. A renamed capture in `highlights.scm` also means updating `highlight::map_capture`.
 
 ## How it's parsed (and why)
 
@@ -83,7 +85,7 @@ Jinja is parsed inside this grammar rather than injected, because Klipper uses `
 
 ## Editors
 
-Both clients are thin; the server does the work. They share a contract with it: the release asset names, the language ids (`klipper`, `gcode`; hover code fences use the name "Klipper"), the `initializationOptions` names, and the grammar `rev`. Change those in one commit.
+Both clients are thin; the server does the work. They share a contract with it: the release asset names, the language ids (`klipper`, `gcode`; hover code fences use the name "Klipper"), the `initializationOptions` names, and the grammar pin (`syntax/`). Both repositories define the language ids (VS Code merges the definitions), so renaming one is a change in both.
 
 ### VS Code (`editors/vscode-klipper-ls`)
 
@@ -99,13 +101,13 @@ KLIPPER_LS_BIN=../../target/debug/klipper-ls KLIPPER_DOCS=../../klipper/docs npm
 
 ### Zed (`editors/zed-klipper-ls`)
 
-Install it with **zed: install dev extension** and pick `editors/zed-klipper-ls`. Query, `config.toml` and shim changes need only **zed: rebuild dev extension**. Validate queries against real files:
+Install it with **zed: install dev extension** and pick `editors/zed-klipper-ls`. Shim changes need only **zed: rebuild dev extension**. Validate queries against real files:
 
 ```sh
-cd grammar && npx tree-sitter query ../editors/zed-klipper-ls/languages/klipper/highlights.scm path/to/printer.cfg
+cd syntax/grammar && npx tree-sitter query ../zed/languages/klipper/highlights.scm path/to/printer.cfg
 ```
 
-Zed builds the grammar from the `rev` in `editors/zed-klipper-ls/extension.toml`, so a grammar change reaches Zed only by commit: commit and push the grammar change, put the new SHA in `rev`, commit, then rebuild the dev extension. To iterate without pushing, temporarily point the grammar `repository` at `file:///…/klipper-ls` (never commit that). Update `docs/highlighting.md` with any `highlights.scm` change.
+This extension only starts the server. The Klipper language itself (grammar, queries, colors) comes from the **Klipper** extension built from `syntax/zed`: install it too (dev extension, folder `syntax/zed`), and see klipper-syntax's CONTRIBUTING for its grammar pin.
 
 Machine-specific Zed settings go in a gitignored `.zed/settings.json` at the repo root, e.g. `{ "lsp": { "klipper-ls": { "initialization_options": { "klipperConfig": "…/printer.cfg" } } } }`.
 

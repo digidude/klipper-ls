@@ -1,13 +1,15 @@
-# klipper-ls
+# klipper-ls: a Klipper language server (LSP)
 
-A language server for [Klipper](https://www.klipper3d.org/) printer config. It speaks LSP over stdio, so any editor can use it. It answers two questions while you edit `printer.cfg`, your macros, or sliced `.gcode`: *what does this do in Klipper?* and *where is it defined?* It is for people who edit Klipper config; it brings Klipper's own docs to the line you're on, and doesn't replace them.
+`klipper-ls` is a language server (LSP) for [Klipper](https://www.klipper3d.org/) printer config. It speaks LSP over stdio, so any editor can use it. It answers two questions while you edit `printer.cfg`, your macros, or sliced `.gcode`: *what does this do in Klipper?* and *where is it defined?* It is for people who edit Klipper config; it brings Klipper's own docs to the line you're on, and doesn't replace them.
 
 > **Early release: feedback and corner cases wanted.** klipper-ls is new and has only been run on a handful of real setups. I'm looking for the files it handles badly: a hover that is wrong or missing, a macro it can't find, odd highlighting, a slow file. [Open an issue](https://github.com/digidude/klipper-ls/issues/new/choose); the forms ask for what's needed. Please remove secrets and personal details from anything you paste. See also [Known limitations](#known-limitations).
 
+> **Pairs with [Klipper Syntax](https://github.com/digidude/klipper-syntax)**, the grammar and syntax highlighting this server is built on: *Klipper Syntax* makes your files look right, *Klipper Language Server* makes them smart. Each works without the other, and this server works just as well with other syntax extensions such as [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper). In VS Code the two are independent installs; in Zed this extension needs a Klipper language to attach to, which **Klipper** (from Klipper Syntax) provides.
+
 | Editor | Package |
 |---|---|
-| VS Code | [`editors/vscode-klipper-ls`](editors/vscode-klipper-ls) |
-| Zed | [`editors/zed-klipper-ls`](editors/zed-klipper-ls) |
+| VS Code | **Klipper Language Server** (`digidude.klipper-ls`); source in [`editors/vscode-klipper-ls`](editors/vscode-klipper-ls). Pair it with any Klipper syntax extension. |
+| Zed | **Klipper Language Server** (extension id `klipper-ls`); source in [`editors/zed-klipper-ls`](editors/zed-klipper-ls). Also install **Klipper**, which defines the language. |
 | Anything else with LSP support (Neovim, Helix, Emacs, …) | run `klipper-ls`; see [Other editors](#other-editors) |
 
 ## Features
@@ -27,7 +29,7 @@ Large slicer files are fine: hovers and highlighting read only the lines they ne
 
 ## Screenshots
 
-Taken in VS Code with [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper) supplying the colors; everything in the boxes is `klipper-ls`.
+Taken in VS Code with [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper) supplying the colors (Klipper Syntax, below, now does that job); everything in the boxes is `klipper-ls`.
 
 **Your macros**: description, parameters with defaults, and where it's defined.
 
@@ -108,7 +110,7 @@ vim.lsp.config("klipper-ls", {
 vim.lsp.enable("klipper-ls")
 ```
 
-The server sends semantic tokens, so a client that supports them gets highlighting without tree-sitter. This is only verified in VS Code so far; Neovim and other clients are untested ([#16](https://github.com/digidude/klipper-ls/issues/16)), so reports from them are especially welcome. The tree-sitter grammar in [`grammar/`](grammar) can also be used on its own.
+The server sends semantic tokens, so a client that supports them gets highlighting without tree-sitter. This is only verified in VS Code so far; Neovim and other clients are untested ([#16](https://github.com/digidude/klipper-ls/issues/16)), so reports from them are especially welcome. The tree-sitter grammar, in [klipper-syntax](https://github.com/digidude/klipper-syntax), can also be used on its own.
 
 ## Known limitations
 

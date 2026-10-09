@@ -1,7 +1,7 @@
 {
   "name": "klipper-ls",
   "displayName": "Klipper Language Server",
-  "description": "Hover docs, go-to-definition and highlighting for Klipper printer.cfg, macros and sliced G-code, powered by klipper-ls.",
+  "description": "Hover docs, go-to-definition and highlighting for Klipper printer.cfg, macros and sliced G-code, powered by klipper-ls. Works alongside any Klipper syntax extension.",
   "version": "0.3.0",
   "publisher": "digidude",
   "author": {
@@ -37,6 +37,8 @@
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
+    "onLanguage:klipper",
+    "onLanguage:gcode",
     "onLanguage:klipper-cfg",
     "onLanguage:klipper-gcode"
   ],
@@ -50,8 +52,7 @@
         ],
         "extensions": [
           ".cfg"
-        ],
-        "configuration": "./language-configuration.json"
+        ]
       },
       {
         "id": "gcode",
@@ -63,13 +64,6 @@
           ".gcode",
           ".gco"
         ]
-      }
-    ],
-    "grammars": [
-      {
-        "language": "klipper",
-        "scopeName": "source.klipper",
-        "path": "./syntaxes/klipper.tmLanguage.json"
       }
     ],
     "configuration": {
