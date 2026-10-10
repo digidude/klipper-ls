@@ -8,7 +8,7 @@ Hover docs, go-to-definition and macro awareness for [Klipper](https://www.klipp
 
 ## Features
 
-From `klipper-ls`, in Klipper config and in sliced `.gcode` files: Klipper's docs for commands, sections, options and `printer.*` status fields; which parameters Klipper ignores (and codes it won't run); your own macros with their `params.*` and variables; and go-to-definition across `[include]`s. The [klipper-ls README](https://github.com/digidude/klipper-ls#features) has the full list and says where the text comes from.
+From `klipper-ls`, in Klipper config and in sliced `.gcode` files: Klipper's docs for commands, sections, options and `printer.*` status fields; which parameters Klipper ignores (and codes it won't run); your own macros with their `params.*` and variables; go-to-definition across `[include]`s; and diagnostics for what can be known without running Klipper (unknown Jinja filters, pin chips nothing provides, `printer.*` objects no section creates, commands Klipper doesn't register). The [klipper-ls README](https://github.com/digidude/klipper-ls#features) has the full list and says where the text comes from.
 
 Colors, the outline panel, brackets, indentation and text objects come from the Klipper extension, not this one.
 
@@ -58,6 +58,7 @@ Where hover text comes from, how macros are found, and what each option means: s
 - Plugins outside Klipper (Beacon, led_effect, …) aren't in Klipper's docs, so their options and commands get no hover.
 - The G-code extension also claims CNC formats (`.nc`, `.tap`), where Klipper/Marlin hovers don't apply.
 - Status fields that Klipper's reference doesn't list (such as `toolhead.estimated_print_time`) are reported as undocumented.
+- No completion or rename yet. Diagnostics cover the checks above and nothing else: no unknown-option or missing-required-option checks.
 
 ## Contributing
 
