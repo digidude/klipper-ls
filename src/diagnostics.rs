@@ -217,13 +217,13 @@ impl Checks<'_> {
             "filter" => suggest(name, FILTERS, FILTER_ALIASES),
             _ => suggest(name, TESTS, &[]),
         };
-        let hint = suggestion.map(|s| format!(" Did you mean `{s}`?")).unwrap_or_default();
+        let hint = suggestion.map(|s| format!(" Did you mean '{s}'?")).unwrap_or_default();
         self.push(
             node,
             DiagnosticSeverity::WARNING,
             if what == "filter" { "unknown-filter" } else { "unknown-test" },
             format!(
-                "`{name}` is not one of the Jinja 2.11 {what}s Klipper's templates can use; Klipper adds none of its own.{hint}"
+                "'{name}' is not one of the Jinja 2.11 {what}s Klipper's templates can use; Klipper adds none of its own.{hint}"
             ),
         );
     }
@@ -246,7 +246,7 @@ impl Checks<'_> {
                 continue;
             }
             let near = suggest(name, &self.chips.iter().map(String::as_str).collect::<Vec<_>>(), &[]);
-            let hint = near.map(|s| format!(" Did you mean `{s}`?")).unwrap_or_default();
+            let hint = near.map(|s| format!(" Did you mean '{s}'?")).unwrap_or_default();
             let tail = match confidence {
                 Confidence::Uncertain => {
                     " Something this tool can't see into (a plugin, or an include that only exists on the printer) may register it."
@@ -257,7 +257,7 @@ impl Checks<'_> {
                 chip,
                 confidence.severity(),
                 "unknown-pin-chip",
-                format!("No `[mcu]`, driver or probe in this config provides the pin chip `{name}`.{hint}{tail}"),
+                format!("No [mcu], driver or probe in this config provides the pin chip '{name}'.{hint}{tail}"),
             );
         }
     }
@@ -289,7 +289,7 @@ impl Checks<'_> {
             severity,
             "unknown-command",
             format!(
-                "`{name}` is not a command Klipper registers and no `[gcode_macro {name}]` here defines it; Klipper will answer \"Unknown command\"."
+                "'{name}' is not a command Klipper registers and no [gcode_macro {name}] here defines it; Klipper will answer \"Unknown command\"."
             ),
         );
     }
@@ -355,12 +355,12 @@ impl Checks<'_> {
         let (severity, message) = match case_match {
             Some(real) => (
                 DiagnosticSeverity::WARNING,
-                format!("`{normalized}` doesn't match the section `[{real}]` exactly; object names are case-sensitive."),
+                format!("'{normalized}' doesn't match the section [{real}] exactly; object names are case-sensitive."),
             ),
             None => (
                 confidence.severity(),
                 format!(
-                    "No section in this config creates a printer object `{normalized}`, so reading from it fails when this template runs. Guard an optional object with `is defined`."
+                    "No section in this config creates a printer object '{normalized}', so reading from it fails when this template runs. Guard an optional object with 'is defined'."
                 ),
             ),
         };
@@ -433,7 +433,7 @@ impl Checks<'_> {
                 DiagnosticSeverity::WARNING,
                 "unknown-macro-variable",
                 format!(
-                    "`{}` defines no `variable_{variable}`; the template sees an undefined value.",
+                    "'{}' defines no 'variable_{variable}'; the template sees an undefined value.",
                     macros[0].name
                 ),
             );
