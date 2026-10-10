@@ -3,6 +3,15 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 
+// Node's global WebSocket (22+, which VS Code's host ships); @types/node 20 predates it.
+declare const WebSocket: new (url: string) => {
+  onopen: () => void;
+  onerror: () => void;
+  onmessage: (event: { data: unknown }) => void;
+  send(data: string): void;
+  close(): void;
+};
+
 const out = process.env.SHOTS_OUT!;
 const title = process.env.SHOTS_TITLE!;
 const hideNotifications = async () => {
@@ -21,8 +30,8 @@ interface Shot {
   keep: number;
   /** Points of width to keep. */
   width: number;
-  /** What to show: the hover, or a peeked definition. */
-  show: "hover" | "peek";
+  /** What to show: the hover, a peeked definition, or the diagnostic under the cursor. */
+  show: "hover" | "peek" | "problem";
   /** A phrase that must appear in the hover, so a shot never captures an empty box. */
   expect?: string;
 }
@@ -32,6 +41,7 @@ const SHOTS: Shot[] = [
   { name: "peek-definition", file: "printer.cfg", at: "HEAT_SOAK MINUTES", keep: 584, width: 1100, show: "peek" },
   { name: "hover-status-field", file: "printer.cfg", at: "homed_axes !=", keep: 280, width: 1100, show: "hover", expect: "homed" },
   { name: "hover-config-option", file: "printer.cfg", at: "rotation_distance", keep: 380, width: 1100, show: "hover", expect: "Distance" },
+  { name: "diagnostic-pin-chip", file: "diagnostics.cfg", at: "EBBCna", keep: 330, width: 1100, show: "problem", expect: "EBBCna" },
   { name: "hover-gcode-ignored-parameter", file: "sample.gcode", at: "M140 S60", keep: 430, width: 1100, show: "hover", expect: "Ignored by Klipper" },
   { name: "hover-gcode-unknown-code", file: "sample.gcode", at: "M500", keep: 380, width: 1100, show: "hover", expect: "Unknown command" },
 ];
@@ -52,7 +62,70 @@ function findWindow(): { id: string; widthPoints: number } {
 const pixelWidth = (file: string) =>
   Number(/pixelWidth: (\d+)/.exec(execFileSync("sips", ["-g", "pixelWidth", file], { encoding: "utf8" }))![1]);
 
+// The Electron window can be captured through its DevTools port, which needs
+// no Screen Recording or Accessibility permission, renders at a fixed size and
+// has no title bar to crop. SHOTS_NATIVE=1 falls back to screencapture.
+interface Cdp {
+  send(method: string, params?: object): Promise<any>;
+  close(): void;
+}
+
+async function connectCdp(port: string): Promise<Cdp> {
+  const targets = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()) as {
+    type: string;
+    title: string;
+    webSocketDebuggerUrl: string;
+  }[];
+  const page = targets.find((t) => t.type === "page" && t.title.includes(title));
+  if (!page) throw new Error(`no window titled "${title}" on port ${port}: ${targets.map((t) => t.title).join(" | ")}`);
+  const ws = new WebSocket(page.webSocketDebuggerUrl);
+  await new Promise<void>((resolve, reject) => {
+    ws.onopen = () => resolve();
+    ws.onerror = () => reject(new Error("could not open the DevTools socket"));
+  });
+  let next = 0;
+  const pending = new Map<number, { resolve: (v: any) => void; reject: (e: Error) => void }>();
+  ws.onmessage = (event) => {
+    const message = JSON.parse(String(event.data));
+    const waiter = pending.get(message.id);
+    if (!waiter) return;
+    pending.delete(message.id);
+    if (message.error) waiter.reject(new Error(message.error.message));
+    else waiter.resolve(message.result);
+  };
+  return {
+    send: (method, params = {}) =>
+      new Promise((resolve, reject) => {
+        const id = ++next;
+        pending.set(id, { resolve, reject });
+        ws.send(JSON.stringify({ id, method, params }));
+      }),
+    close: () => ws.close(),
+  };
+}
+
+async function captureCdp(file: string, keep: number, width: number, scale = 2) {
+  const cdp = await connectCdp(process.env.SHOTS_CDP_PORT!);
+  try {
+    // The workbench draws its own title bar ("[Extension Development Host] …"),
+    // 32 points tall; the shot starts below it and keeps `keep` points.
+    const TITLE_BAR = 32;
+    await cdp.send("Emulation.setDeviceMetricsOverride", { width, height: keep + TITLE_BAR + 40, deviceScaleFactor: scale, mobile: false });
+    await sleep(600);
+    const { data } = await cdp.send("Page.captureScreenshot", {
+      format: "png",
+      fromSurface: true,
+      clip: { x: 0, y: TITLE_BAR, width, height: keep, scale: 1 },
+    });
+    fs.writeFileSync(file, Buffer.from(data, "base64"));
+    await cdp.send("Emulation.clearDeviceMetricsOverride");
+  } finally {
+    cdp.close();
+  }
+}
+
 async function capture(file: string, keep: number, width: number) {
+  if (process.env.SHOTS_CDP_PORT && !process.env.SHOTS_NATIVE) return captureCdp(file, keep, width);
   // Window lookups and captures occasionally fail right after a window repaint.
   let last: unknown;
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -107,6 +180,111 @@ function resizeWindow(width: number, height: number) {
   }
 }
 
+async function waitForDiagnostic(uri: vscode.Uri, phrase: string, present = true) {
+  // Diagnostics arrive after the docs load; wait for the one we mean (or for it to clear).
+  for (let i = 0; i < 100; i++) {
+    const has = vscode.languages.getDiagnostics(uri).some((d) => d.message.includes(phrase));
+    if (has === present) return;
+    await sleep(300);
+  }
+  throw new Error(`diagnostic mentioning "${phrase}" ${present ? "never appeared" : "never cleared"}`);
+}
+
+async function waitForHover(uri: vscode.Uri, pos: vscode.Position, phrase?: string) {
+  // The server answers once its docs are loaded; wait for a real answer.
+  let text = "";
+  for (let i = 0; i < 100 && !text; i++) {
+    text = await hoverText(uri, pos);
+    if (!text) await sleep(300);
+  }
+  if (phrase && !text.includes(phrase)) throw new Error(`hover lacks "${phrase}":\n${text}`);
+}
+
+const HERO = { keep: 580, width: 1100 };
+const FRAME = { keep: 580, width: 1100 };
+
+/** The README hero: a squiggle and a macro hover in one frame. */
+async function heroStill(root: string) {
+  const doc = await vscode.workspace.openTextDocument(path.join(root, "hero.cfg"));
+  const editor = await vscode.window.showTextDocument(doc, { preview: false });
+  const pos = doc.positionAt(doc.getText().indexOf("PRINT_START BED") + 1);
+  editor.selection = new vscode.Selection(pos, pos);
+  await waitForDiagnostic(doc.uri, "EBBCna");
+  await waitForHover(doc.uri, pos, "Heat the bed");
+  await hideNotifications();
+  await sleep(500);
+  await vscode.commands.executeCommand("editor.action.showHover");
+  await sleep(1500);
+  if (!process.env.SHOTS_DRY) await capture(path.join(out, "hero.png"), HERO.keep, HERO.width);
+  await vscode.commands.executeCommand("editor.action.hideHover");
+  console.log("captured hero");
+}
+
+/**
+ * Frames for the README hero GIF: a pin chip is mistyped and flagged, hovered,
+ * then a macro call is hovered and followed into the included file. The
+ * frames and their durations go to SHOTS_FRAMES; make-gif.py assembles them.
+ */
+async function heroFrames(root: string) {
+  const dir = process.env.SHOTS_FRAMES;
+  if (!dir || process.env.SHOTS_DRY || process.env.SHOTS_NATIVE) {
+    console.log("hero frames skipped (need SHOTS_FRAMES and DevTools capture)");
+    return;
+  }
+  fs.mkdirSync(dir, { recursive: true });
+  const manifest: { file: string; ms: number }[] = [];
+  const frame = async (ms: number) => {
+    const file = `frame-${String(manifest.length).padStart(2, "0")}.png`;
+    await hideNotifications();
+    await sleep(400);
+    await captureCdp(path.join(dir, file), FRAME.keep, FRAME.width);
+    manifest.push({ file, ms });
+  };
+  const show = async (cmd = "editor.action.showHover") => {
+    await vscode.commands.executeCommand(cmd);
+    await sleep(1200);
+  };
+
+  const doc = await vscode.workspace.openTextDocument(path.join(root, "hero.cfg"));
+  const editor = await vscode.window.showTextDocument(doc, { preview: false });
+  const at = (needle: string, extra = 1) => doc.positionAt(doc.getText().indexOf(needle) + extra);
+  const caret = (p: vscode.Position) => (editor.selection = new vscode.Selection(p, p));
+
+  // Start from the correct chip, then "type" the transposition.
+  const typo = at("EBBCna", 0);
+  const chip = new vscode.Range(typo.translate(0, 4), typo.translate(0, 6));
+  await editor.edit((e) => e.replace(chip, "an"));
+  caret(typo.translate(0, 6));
+  await waitForDiagnostic(doc.uri, "EBBCna", false);
+  await frame(1400);
+
+  await editor.edit((e) => e.delete(new vscode.Range(typo.translate(0, 4), typo.translate(0, 6))));
+  for (const [i, ch] of [...("na")].entries()) {
+    await editor.edit((e) => e.insert(typo.translate(0, 4 + i), ch));
+    caret(typo.translate(0, 5 + i));
+    await sleep(160);
+  }
+  await waitForDiagnostic(doc.uri, "EBBCna");
+  await frame(1200);
+
+  caret(at("EBBCna", 2));
+  await show();
+  await frame(3200);
+
+  const soak = at("HEAT_SOAK MINUTES");
+  caret(soak);
+  await waitForHover(doc.uri, soak, "Wait for the bed");
+  await show();
+  await frame(3200);
+
+  await show("editor.action.revealDefinition");
+  await frame(2800);
+
+  fs.writeFileSync(path.join(dir, "frames.json"), JSON.stringify(manifest));
+  await vscode.commands.executeCommand("workbench.action.files.saveAll");
+  console.log(`captured ${manifest.length} hero frames`);
+}
+
 export async function run(): Promise<void> {
   fs.mkdirSync(out, { recursive: true });
   const root = vscode.workspace.workspaceFolders![0].uri.fsPath;
@@ -116,6 +294,10 @@ export async function run(): Promise<void> {
     await vscode.commands.executeCommand(cmd);
   }
 
+  await heroStill(root);
+  await heroFrames(root);
+  await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+
   for (const shot of SHOTS) {
     const doc = await vscode.workspace.openTextDocument(path.join(root, shot.file));
     const editor = await vscode.window.showTextDocument(doc, { preview: false });
@@ -124,17 +306,12 @@ export async function run(): Promise<void> {
     // Near the top, so the hover opens below the line instead of covering the code above it.
     editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.AtTop);
 
-    // The server answers once its docs are loaded; wait for a real answer.
-    let text = "";
-    for (let i = 0; i < 100 && !text; i++) {
-      text = await hoverText(doc.uri, pos);
-      if (!text) await sleep(300);
-    }
-    if (shot.expect && !text.includes(shot.expect)) throw new Error(`${shot.name}: hover lacks "${shot.expect}":\n${text}`);
+    if (shot.show === "problem") await waitForDiagnostic(doc.uri, shot.expect!);
+    else await waitForHover(doc.uri, pos, shot.expect).catch((e) => { throw new Error(`${shot.name}: ${e.message}`); });
 
     await hideNotifications();
     await sleep(500);
-    await vscode.commands.executeCommand(shot.show === "hover" ? "editor.action.showHover" : "editor.action.peekDefinition");
+    await vscode.commands.executeCommand(shot.show === "peek" ? "editor.action.peekDefinition" : "editor.action.showHover");
     await sleep(1500);
     if (!process.env.SHOTS_DRY) await capture(path.join(out, `${shot.name}.png`), shot.keep, shot.width);
     await vscode.commands.executeCommand("closeReferenceSearch");

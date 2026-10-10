@@ -1,10 +1,10 @@
 # Klipper Language Server for VS Code
 
-> **Pairs with [Klipper Syntax](https://github.com/digidude/klipper-syntax)**, which supplies a TextMate grammar and editing configuration. It is optional: this extension works on its own (colors then come from the server's semantic tokens) and with other Klipper syntax extensions such as dannymcgee.klipper. Klipper Syntax is how your files *look*; this is what makes them *know* things.
+**Hover, jump and check your Klipper config without leaving the editor.**
+
+![A mistyped pin chip underlined in red, and a hover on a macro call showing its description, parameters, variables and where it is defined](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/hero.png)
 
 Hover docs, go-to-definition and highlighting for [Klipper](https://www.klipper3d.org/) `printer.cfg`, your macros and sliced `.gcode`, powered by [klipper-ls](https://github.com/digidude/klipper-ls). Hover any command, option, macro or `printer.*` field to see what it does in Klipper, and jump from a macro call to its definition, including the G-code and Jinja2 inside `[gcode_macro]` blocks.
-
-> **Early release: feedback and corner cases wanted.** klipper-ls is new and has only been run on a handful of real setups. I'm looking for the files it handles badly: a hover that is wrong or missing, a macro it can't find, odd highlighting, a slow file. [Open an issue](https://github.com/digidude/klipper-ls/issues/new/choose); the forms ask for what's needed. Please remove secrets and personal details from anything you paste.
 
 ## Features
 
@@ -18,9 +18,17 @@ Hover docs, go-to-definition and highlighting for [Klipper](https://www.klipper3
 - **Highlighting from the real parse tree** (LSP semantic tokens): sections, options, pins, and the G-code and Jinja inside macros. The colors come from your theme. `.gcode` files get it too, for the lines on screen.
 - **Large slicer files are fine:** hovers and highlighting read only the lines they need.
 
+> **Early release: feedback and corner cases wanted.** klipper-ls is new and has only been run on a handful of real setups. I'm looking for the files it handles badly: a hover that is wrong or missing, a macro it can't find, odd highlighting, a slow file. [Open an issue](https://github.com/digidude/klipper-ls/issues/new/choose); the forms ask for what's needed. Please remove secrets and personal details from anything you paste.
+
+> **Pairs with [Klipper Syntax](https://github.com/digidude/klipper-syntax)**, which supplies a TextMate grammar and editing configuration. It is optional: this extension works on its own (colors then come from the server's semantic tokens) and with other Klipper syntax extensions such as dannymcgee.klipper. Klipper Syntax is how your files *look*; this is what makes them *know* things.
+
 ## Screenshots
 
-Taken in VS Code with [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper) supplying the colors; everything in the boxes is `klipper-ls`.
+Taken in VS Code; everything in the boxes is `klipper-ls`.
+
+**In motion**: a mistyped pin chip is flagged as you type it; a macro call is hovered, then followed into the `[include]`d file.
+
+![A pin chip is mistyped and flagged, then a macro call is hovered and followed into the included file](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/hero.gif)
 
 **Your macros**: description, parameters with defaults, and where it's defined.
 
@@ -45,6 +53,10 @@ Taken in VS Code with [dannymcgee.klipper](https://marketplace.visualstudio.com/
 **Codes Klipper doesn't run**: a warning that it replies `Unknown command` and skips the line.
 
 ![Hover on M500 explaining that Klipper skips it](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/hover-gcode-unknown-code.png)
+
+**Diagnostics**: a pin chip that nothing in the config provides, with the near miss suggested.
+
+![Squiggle under a misspelled pin chip with the message and a suggestion](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/diagnostic-pin-chip.png)
 
 ## Install
 
@@ -76,13 +88,13 @@ On Windows, build the server (`cargo install --git https://github.com/digidude/k
 
 ## Using it with another Klipper extension
 
-klipper-ls works alongside [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper), an alternative to Klipper Syntax with snippets and extras. If you prefer its colors, keep both installed and tell VS Code to open your files with its language:
+klipper-ls works alongside [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper), an alternative to Klipper Syntax with snippets and extras. To use it, keep both installed and tell VS Code to open your files with its language:
 
 ```jsonc
 "files.associations": { "*.cfg": "klipper-cfg", "*.gcode": "klipper-gcode" }
 ```
 
-klipper-ls then attaches to those files and adds hover and go-to-definition. It leaves the colors to the other extension: semantic tokens are only sent for this extension's own `klipper` and `gcode` languages, so the two never fight. `klipper-config` (aeresov.klipper-config) isn't supported this way yet.
+klipper-ls then attaches to those files and adds hover and go-to-definition. Semantic tokens are only sent for this extension's own `klipper` and `gcode` languages, so the two never fight. `klipper-config` (aeresov.klipper-config) isn't supported this way yet.
 
 ## Settings
 
@@ -113,8 +125,8 @@ Klipper's and Marlin's docs (both GPL-3.0) are read at runtime, from a local cop
 
 - Plugins outside Klipper (Beacon, led_effect, …) have no docs to show.
 - No diagnostics, completion or rename yet.
-- Colors come from your theme's mapping of semantic token types (function, keyword, parameter, …). Themes that disable semantic highlighting fall back to a simpler built-in TextMate grammar, which is less precise. The extension turns semantic highlighting on for `klipper` and `gcode`; if you override `editor.semanticTokenColorCustomizations` you can recolor them.
-- Punctuation (`=`, `:`, brackets) keeps the TextMate color; the server doesn't tokenize it.
+- Colors come from your theme's mapping of semantic token types (function, keyword, parameter, …). The extension turns semantic highlighting on for `klipper` and `gcode`, so a theme can't disable it; if you override `editor.semanticTokenColorCustomizations` you can recolor them.
+- This extension ships no TextMate grammar, so files are uncolored until the server answers, and punctuation (`=`, `:`, brackets), which the server doesn't tokenize, stays uncolored unless a syntax extension such as Klipper Syntax supplies a grammar.
 
 ## Development
 

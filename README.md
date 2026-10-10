@@ -1,10 +1,34 @@
 # klipper-ls: a Klipper language server (LSP)
 
-`klipper-ls` is a language server (LSP) for [Klipper](https://www.klipper3d.org/) printer config. It speaks LSP over stdio, so any editor can use it. It answers two questions while you edit `printer.cfg`, your macros, or sliced `.gcode`: *what does this do in Klipper?* and *where is it defined?* It is for people who edit Klipper config; it brings Klipper's own docs to the line you're on, and doesn't replace them.
+**Hover, jump and check your Klipper config without leaving the editor.**
+
+![A mistyped pin chip underlined in red, and a hover on a macro call showing its description, parameters, variables and where it is defined](docs/screenshots/hero.png)
+
+`klipper-ls` is a language server (LSP) for [Klipper](https://www.klipper3d.org/) printer config. It speaks LSP over stdio, so any editor can use it. It answers two questions while you edit `printer.cfg`, your macros, or sliced `.gcode`: *what does this do in Klipper?* and *where is it defined?* It also flags what's wrong that can be known without running Klipper. It is for people who edit Klipper config; it brings Klipper's own docs to the line you're on, and doesn't replace them.
+
+## Features
+
+These work in Klipper config and in sliced `.gcode` files:
+
+| | |
+|---|---|
+| **Commands**<br>`M140`, `QUAD_GANTRY_LEVEL` | Klipper's documentation, and the config section the command needs. Standard G/M codes also show Marlin's per-parameter reference, with the parameters Klipper ignores folded into one line. |
+| **Parameters**<br>`S` in `M109 S215` | Whether Klipper uses it. Slicer start code written for Marlin can silently do nothing on Klipper; this shows where. |
+| **Codes Klipper doesn't run** | A warning that Klipper replies `Unknown command` and skips the line. |
+| **Your macros**<br>`PRINT_START` | The description, the `params.*` it reads with their defaults, its variables, and where it's defined. |
+| **Sections and options**<br>`[heater_bed]`, `rotation_distance` | The matching entry in Klipper's config reference. |
+| **Status fields in templates**<br>`printer.toolhead.position`, `printer['heater_generic chamber'].target` | The matching entry in Klipper's status reference. `printer["gcode_macro X"].var` shows the variable's initial value, and flags a variable the macro doesn't define. |
+| **Go to definition** | From a macro call to its `[gcode_macro]`, across `[include]`d files; from `[include macros/*.cfg]` to the files; from built-ins into Klipper's docs. |
+| **Diagnostics** | What's wrong that can be known without running Klipper: unknown Jinja filters and tests (`\|integer`), pin chips that nothing in the config provides (`^!EBBCna:PB6`), `printer.x` objects no section creates, `printer["gcode_macro X"].y` for a variable `X` doesn't define, and commands Klipper doesn't register. See [Diagnostics](#diagnostics) for how sure each is. |
+| **Highlighting**<br>semantic tokens | Config files and macros, including the G-code and Jinja inside `[gcode_macro]`, colored from the real parse tree, the same as in Zed. In `.gcode` files only the lines on screen are looked at. |
+
+Large slicer files are fine: hovers and highlighting read only the lines they need, so a 32 MB file answers instantly.
 
 > **Early release: feedback and corner cases wanted.** klipper-ls is new and has only been run on a handful of real setups. I'm looking for the files it handles badly: a hover that is wrong or missing, a macro it can't find, odd highlighting, a slow file. [Open an issue](https://github.com/digidude/klipper-ls/issues/new/choose); the forms ask for what's needed. Please remove secrets and personal details from anything you paste. See also [Known limitations](#known-limitations).
 
 > **Pairs with [Klipper Syntax](https://github.com/digidude/klipper-syntax)**, the grammar and syntax highlighting this server is built on: *Klipper Syntax* makes your files look right, *Klipper Language Server* makes them smart. Each works without the other, and this server works just as well with other syntax extensions such as [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper). In VS Code the two are independent installs; in Zed this extension needs a Klipper language to attach to, which **Klipper** (from Klipper Syntax) provides.
+
+## Editors
 
 | Editor | Package |
 |---|---|
@@ -12,25 +36,13 @@
 | Zed | **Klipper Language Server** (extension id `klipper-ls`); source in [`editors/zed-klipper-ls`](editors/zed-klipper-ls). Also install **Klipper**, which defines the language. |
 | Anything else with LSP support (Neovim, Helix, Emacs, …) | run `klipper-ls`; see [Other editors](#other-editors) |
 
-## Features
-
-These work in Klipper config and in sliced `.gcode` files:
-
-- **Commands** (`M140`, `QUAD_GANTRY_LEVEL`): Klipper's documentation, and the config section the command needs. Standard G/M codes also show Marlin's per-parameter reference, with the parameters Klipper ignores folded into one line.
-- **Parameters** (`S` in `M109 S215`): whether Klipper uses it. Slicer start code written for Marlin can silently do nothing on Klipper; this shows where.
-- **Codes Klipper doesn't run:** a warning that Klipper replies `Unknown command` and skips the line.
-- **Your macros** (`PRINT_START`): the description, the `params.*` it reads with their defaults, its variables, and where it's defined.
-- **Sections and options** (`[heater_bed]`, `rotation_distance`): the matching entry in Klipper's config reference.
-- **Status fields in templates** (`printer.toolhead.position`, `printer['heater_generic chamber'].target`): the matching entry in Klipper's status reference. `printer["gcode_macro X"].var` shows the variable's initial value, and flags a variable the macro doesn't define.
-- **Go to definition:** from a macro call to its `[gcode_macro]`, across `[include]`d files; from `[include macros/*.cfg]` to the files; from built-ins into Klipper's docs.
-- **Diagnostics** for what's wrong that can be known without running Klipper: unknown Jinja filters and tests (`|integer`), pin chips that nothing in the config provides (`^!EBBCna:PB6`), `printer.x` objects no section creates, `printer["gcode_macro X"].y` for a variable `X` doesn't define, and commands Klipper doesn't register. See [Diagnostics](#diagnostics) for how sure each is.
-- **Highlighting** (semantic tokens): config files and macros, including the G-code and Jinja inside `[gcode_macro]`, colored from the real parse tree, the same as in Zed. In `.gcode` files only the lines on screen are looked at.
-
-Large slicer files are fine: hovers and highlighting read only the lines they need, so a 32 MB file answers instantly.
-
 ## Screenshots
 
-Taken in VS Code with [dannymcgee.klipper](https://marketplace.visualstudio.com/items?itemName=dannymcgee.klipper) supplying the colors (Klipper Syntax, below, now does that job); everything in the boxes is `klipper-ls`.
+Taken in VS Code; everything in the boxes is `klipper-ls`.
+
+**In motion**: a mistyped pin chip is flagged as you type it; a macro call is hovered, then followed into the `[include]`d file.
+
+![A pin chip is mistyped and flagged, then a macro call is hovered and followed into the included file](docs/screenshots/hero.gif)
 
 **Your macros**: description, parameters with defaults, and where it's defined.
 
@@ -55,6 +67,10 @@ Taken in VS Code with [dannymcgee.klipper](https://marketplace.visualstudio.com/
 **Codes Klipper doesn't run**: a warning that it replies `Unknown command` and skips the line.
 
 ![Hover on M500 explaining that Klipper skips it](docs/screenshots/hover-gcode-unknown-code.png)
+
+**Diagnostics**: a pin chip that nothing in the config provides, with the near miss suggested.
+
+![Squiggle under a misspelled pin chip with the message and a suggestion](docs/screenshots/diagnostic-pin-chip.png)
 
 ## Install
 

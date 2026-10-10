@@ -79,6 +79,21 @@ export async function run(): Promise<void> {
     assert.ok(cfg.includes(expected), `config token ${expected} missing from ${cfg.join(" ")}`);
   }
 
+  // Next to Klipper Syntax: its TextMate grammar and our semantic tokens
+  // describe the same document, and neither may hide the other.
+  if (vscode.extensions.getExtension("digidude.klipper-syntax")) {
+    const textmate = await vscode.commands.executeCommand<{ c: string; t: string }[]>(
+      "_workbench.captureSyntaxTokens", doc.uri);
+    const scoped = (word: string, scope: string) => textmate.some((t) => t.c === word && t.t.includes(scope));
+    assert.ok(scoped("heater_bed", "entity.name.type.section"), "TextMate: section type");
+    assert.ok(scoped("PRINT_START", "entity.name.function.macro"), "TextMate: macro name in header");
+    assert.ok(scoped("PB4", "constant.other.pin"), "TextMate: pin");
+    assert.ok(scoped("M140", "keyword.control.gcode"), "TextMate: standard code");
+    assert.ok(scoped("HEAT_SOAK", "entity.name.function.gcode"), "TextMate: macro call");
+    assert.ok(cfg.includes("heater_bed:type") && cfg.includes("HEAT_SOAK:function"), "semantic tokens still arrive");
+    console.log("klipper-syntax pair ok");
+  }
+
   // ...and in .gcode, where only the requested lines are looked at.
   const gdoc = await vscode.workspace.openTextDocument(path.join(fixtures, "sample.gcode"));
   assert.equal(gdoc.languageId, "gcode");
