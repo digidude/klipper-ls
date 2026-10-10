@@ -4,19 +4,23 @@
 
 ![A mistyped pin chip underlined in red, and a hover on a macro call showing its description, parameters, variables and where it is defined](https://github.com/digidude/klipper-ls/raw/main/docs/screenshots/hero.png)
 
-Hover docs, go-to-definition and highlighting for [Klipper](https://www.klipper3d.org/) `printer.cfg`, your macros and sliced `.gcode`, powered by [klipper-ls](https://github.com/digidude/klipper-ls). Hover any command, option, macro or `printer.*` field to see what it does in Klipper, and jump from a macro call to its definition, including the G-code and Jinja2 inside `[gcode_macro]` blocks.
+Hover docs, go-to-definition, diagnostics and highlighting for [Klipper](https://www.klipper3d.org/) `printer.cfg`, your macros and sliced `.gcode`, powered by [klipper-ls](https://github.com/digidude/klipper-ls). Hover any command, option, macro or `printer.*` field to see what it does in Klipper, and jump from a macro call to its definition, including the G-code and Jinja2 inside `[gcode_macro]` blocks.
 
 ## Features
 
-- **Commands** (`M140`, `QUAD_GANTRY_LEVEL`): Klipper's documentation, and the config section the command needs. Standard G/M codes also show Marlin's per-parameter reference, with the parameters Klipper ignores folded into one line.
-- **Parameters** (`S` in `M109 S215`): whether Klipper uses it. Slicer start code written for Marlin can silently do nothing on Klipper; this shows where.
-- **Codes Klipper doesn't run:** a warning that Klipper replies `Unknown command` and skips the line.
-- **Your macros:** description, the `params.*` it reads with defaults, its variables, and where it's defined.
-- **Sections and options** (`[heater_bed]`, `rotation_distance`): the entry in Klipper's config reference.
-- **Status fields in templates** (`printer.toolhead.position`): the entry in Klipper's status reference.
-- **Go to definition** (F12 / Cmd-click): macro call → `[gcode_macro]` across `[include]`d files; `[include macros/*.cfg]` → the files.
-- **Highlighting from the real parse tree** (LSP semantic tokens): sections, options, pins, and the G-code and Jinja inside macros. The colors come from your theme. `.gcode` files get it too, for the lines on screen.
-- **Large slicer files are fine:** hovers and highlighting read only the lines they need.
+| | |
+|---|---|
+| **Commands**<br>`M140`, `QUAD_GANTRY_LEVEL` | Klipper's documentation, and the config section the command needs. Standard G/M codes also show Marlin's per-parameter reference, with the parameters Klipper ignores folded into one line. |
+| **Parameters**<br>`S` in `M109 S215` | Whether Klipper uses it. Slicer start code written for Marlin can silently do nothing on Klipper; this shows where. |
+| **Codes Klipper doesn't run** | A warning that Klipper replies `Unknown command` and skips the line. |
+| **Your macros**<br>`PRINT_START` | The description, the `params.*` it reads with their defaults, its variables, and where it's defined. |
+| **Sections and options**<br>`[heater_bed]`, `rotation_distance` | The matching entry in Klipper's config reference. |
+| **Status fields in templates**<br>`printer.toolhead.position`, `printer['heater_generic chamber'].target` | The matching entry in Klipper's status reference. `printer["gcode_macro X"].var` shows the variable's initial value, and flags a variable the macro doesn't define. |
+| **Go to definition**<br>F12 / Cmd-click | From a macro call to its `[gcode_macro]`, across `[include]`d files; from `[include macros/*.cfg]` to the files; from built-ins into Klipper's docs. |
+| **Diagnostics** | What's wrong that can be known without running Klipper: unknown Jinja filters and tests (`\|integer`), pin chips that nothing in the config provides (`^!EBBCna:PB6`), `printer.x` objects no section creates, `printer["gcode_macro X"].y` for a variable `X` doesn't define, and commands Klipper doesn't register. See [Diagnostics](https://github.com/digidude/klipper-ls#diagnostics) for how sure each is. |
+| **Highlighting**<br>semantic tokens | Sections, options, pins, and the G-code and Jinja inside macros, colored from the real parse tree. The colors come from your theme. `.gcode` files get it too, for the lines on screen. |
+
+Large slicer files are fine: hovers and highlighting read only the lines they need.
 
 > **Early release: feedback and corner cases wanted.** klipper-ls is new and has only been run on a handful of real setups. I'm looking for the files it handles badly: a hover that is wrong or missing, a macro it can't find, odd highlighting, a slow file. [Open an issue](https://github.com/digidude/klipper-ls/issues/new/choose); the forms ask for what's needed. Please remove secrets and personal details from anything you paste.
 
@@ -105,7 +109,7 @@ klipper-ls then attaches to those files and adds hover and go-to-definition. Sem
 | `klipper.klipperConfig` | `printer.cfg` (or its folder), used to find your macros from `.gcode` files. |
 | `klipper.marlinDocs` | A Marlin documentation checkout, or its `_gcode` folder. Default: downloaded once. |
 | `klipper.downloadDocs` | `false` = never use the network for docs. |
-| `klipper.diagnostics` | `false` = turn off diagnostics (unknown filters, pin chips, printer objects, commands). |
+| `klipper.diagnostics` | `false` = turn off diagnostics (unknown filters, pin chips, printer objects, macro variables, commands). |
 | `klipper.trace.server` | `off`, `messages` or `verbose`: log the LSP traffic in the Klipper output channel. |
 
 Changing a setting restarts the server. Commands: **Klipper: Restart Language Server**, **Klipper: Show Server Output**.
@@ -124,7 +128,8 @@ Klipper's and Marlin's docs (both GPL-3.0) are read at runtime, from a local cop
 ## Known limitations
 
 - Plugins outside Klipper (Beacon, led_effect, …) have no docs to show.
-- No diagnostics, completion or rename yet.
+- Status fields that Klipper's reference doesn't list (such as `toolhead.estimated_print_time`) are reported as undocumented.
+- No completion or rename yet. Diagnostics cover the checks listed under Features and nothing else: no unknown-option or missing-required-option checks.
 - Colors come from your theme's mapping of semantic token types (function, keyword, parameter, …). The extension turns semantic highlighting on for `klipper` and `gcode`, so a theme can't disable it; if you override `editor.semanticTokenColorCustomizations` you can recolor them.
 - This extension ships no TextMate grammar, so files are uncolored until the server answers, and punctuation (`=`, `:`, brackets), which the server doesn't tokenize, stays uncolored unless a syntax extension such as Klipper Syntax supplies a grammar.
 
